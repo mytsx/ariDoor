@@ -1,0 +1,34 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Arduino: Derle + Yukle + Arayuz Ac",
+      "type": "shell",
+      "command": "arduino-cli compile --fqbn arduino:avr:nano ${workspaceFolder} && arduino-cli upload -p /dev/cu.usbserial-130 --fqbn arduino:avr:nano ${workspaceFolder} && open ${workspaceFolder}/arayuz.html",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      }
+    },
+    {
+      "label": "Arduino: Sadece Derle ve Yukle",
+      "type": "shell",
+      "command": "arduino-cli compile --fqbn arduino:avr:nano ${workspaceFolder} && arduino-cli upload -p /dev/cu.usbserial-130 --fqbn arduino:avr:nano ${workspaceFolder}",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Arduino: Serial Monitor",
+      "type": "shell",
+      "command": "stty -f /dev/cu.usbserial-130 9600 cs8 -cstopb -parenb && cat /dev/cu.usbserial-130",
+      "group": "test",
+      "problemMatcher": [],
+      "isBackground": true
+    }
+  ]
+}

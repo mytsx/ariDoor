@@ -1,55 +1,111 @@
 /*
-  28BYJ-48 Step Motor Test
-  ------------------------
+  ariDoor - Ari Kovani Kapi Surgu Sistemi
+  ----------------------------------------
+  Step motor + DHT22 sicaklik/nem sensoru
+  Web arayuzu uzerinden serial ile kontrol edilir.
+
   Baglanti:
-    ULN2003   Arduino Nano
-    IN1  -->  Pin 8
-    IN2  -->  Pin 9
-    IN3  -->  Pin 10
-    IN4  -->  Pin 11
-    -    -->  GND
-    +    -->  5V
+    Step Motor (28BYJ-48 + ULN2003):
+      IN1->Pin8, IN2->Pin9, IN3->Pin10, IN4->Pin11, +->5V, -->GND
+
+    DHT22 Sensor (3 pinli modul, pull-up dahili):
+      VCC->5V, DATA->Pin2, GND->GND
 */
 
 #include <Stepper.h>
+#include <DHT.h>
 
-// 28BYJ-48: 2048 adim = 1 tam tur
+// --- Pin Tanimlari ---
+#define DHT_PIN 2
+#define DHT_TIP DHT22
+
+#define MOTOR_IN1 8
+#define MOTOR_IN2 9
+#define MOTOR_IN3 10
+#define MOTOR_IN4 11
+
+// --- Motor Ayarlari ---
 const int ADIM_PER_TUR = 2048;
+const int MOTOR_HIZ = 10; // RPM
 
-// Pin sirasi: IN1, IN3, IN2, IN4 (28BYJ-48 icin ozel sira!)
-Stepper motor(ADIM_PER_TUR, 8, 10, 9, 11);
+// --- Nesneler ---
+Stepper motor(ADIM_PER_TUR, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
+DHT dht(DHT_PIN, DHT_TIP);
+
+// --- Durum ---
+long mevcutAdim = 0;
+
+// --- Zamanlama ---
+unsigned long sonOkuma = 0;
+const unsigned long OKUMA_ARASI = 2000; // 2 saniyede bir sensor oku
 
 void setup() {
   Serial.begin(9600);
-  motor.setSpeed(10); // 10 RPM (yavas ve guvenli)
+  motor.setSpeed(MOTOR_HIZ);
+  dht.begin();
 
-  Serial.println("=================================");
-  Serial.println("  28BYJ-48 Step Motor Test");
-  Serial.println("=================================");
-  Serial.println();
-
-  // Test 1: Yarim tur ileri
-  Serial.println("[1/3] Yarim tur ileri donuyor...");
-  motor.step(1024);
-  Serial.println("  -> Tamamlandi.");
-  delay(1000);
-
-  // Test 2: Yarim tur geri
-  Serial.println("[2/3] Yarim tur geri donuyor...");
-  motor.step(-1024);
-  Serial.println("  -> Tamamlandi.");
-  delay(1000);
-
-  // Test 3: Tam tur
-  Serial.println("[3/3] Tam tur donuyor...");
-  motor.step(2048);
-  Serial.println("  -> Tamamlandi.");
-  delay(500);
-
-  Serial.println();
-  Serial.println("=== TEST TAMAMLANDI ===");
-  Serial.println("Motor duzgun dondu mu?");
+  Serial.println("{\"durum\":\"hazir\"}");
 }
 
 void loop() {
+  // Sensor okuma (2 saniyede bir)
+  if (millis() - sonOkuma >= OKUMA_ARASI) {
+    sonOkuma = millis();
+    sensorOku();
+  }
+
+  // Serial komut dinle
+  if (Serial.available() > 0) {
+    String komut = Serial.readStringUntil('\n');
+    komut.trim();
+    komutIsle(komut);
+  }
+}
+
+void sensorOku() {
+  float sic = dht.readTemperature();
+  float nem = dht.readHumidity();
+
+  Serial.print("{\"sic\":");
+  if (isnan(sic)) Serial.print("null"); else Serial.print(sic, 1);
+  Serial.print(",\"nem\":");
+  if (isnan(nem)) Serial.print("null"); else Serial.print(nem, 1);
+  Serial.print(",\"adim\":");
+  Serial.print(mevcutAdim);
+  Serial.println("}");
+}
+
+void komutIsle(String komut) {
+  if (komut == "SAG") {
+    motor.step(64);
+    mevcutAdim += 64;
+    adimBildir();
+  }
+  else if (komut == "SOL") {
+    motor.step(-64);
+    mevcutAdim -= 64;
+    adimBildir();
+  }
+  else if (komut == "SIFIR") {
+    if (mevcutAdim != 0) {
+      motor.step(-mevcutAdim);
+      mevcutAdim = 0;
+    }
+    adimBildir();
+  }
+  else if (komut.startsWith("GIT:")) {
+    long hedef = komut.substring(4).toInt();
+    long fark = hedef - mevcutAdim;
+    if (fark != 0) {
+      motor.step(fark);
+      mevcutAdim = hedef;
+    }
+    adimBildir();
+  }
+}
+
+void adimBildir() {
+  Serial.print("{\"adim\":");
+  Serial.print(mevcutAdim);
+  Serial.println("}");
 }
