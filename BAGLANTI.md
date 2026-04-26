@@ -1,43 +1,69 @@
 # ariDoor - Pin Bağlantıları
 
+## Güç Hattı
+
+İki ayrı güç hattı var. Sebebi: step motorun bobin kapanma/açılması Arduino'nun 5V hattında voltaj sıçramaları (inductive kickback) üretip DHT22'yi yakıyordu. Motor ve LCD arka ışığı ayrı bir hatta alındı.
+
+### Arduino 5V hattı (hassas bileşenler)
+- DHT22 VCC
+- LCD VDD (mantık devresi)
+- Potansiyometre (kontrast referansı)
+
+### Harici 5V hattı (9V pil → regülatör → 5V)
+- ULN2003 `+` (motor gücü)
+- LCD `A` (arka ışık)
+
+### Ortak GND
+**Tüm GND'ler ortak rayda birleşir** — Arduino GND, harici regülatör `-`, ULN2003 `-`, LCD VSS, LCD K, DHT22 GND. Ortak GND olmadan ULN2003 sinyal referansını kaybeder.
+
 ## Arduino Nano
 
 ### Step Motor (28BYJ-48 + ULN2003)
-| ULN2003 | Arduino Nano |
-|---------|-------------|
-| IN1     | Pin 8       |
-| IN2     | Pin 9       |
-| IN3     | Pin 10      |
-| IN4     | Pin 11      |
-| +       | 5V          |
-| -       | GND         |
+| ULN2003 | Bağlantı            |
+|---------|---------------------|
+| IN1     | Arduino Pin 8       |
+| IN2     | Arduino Pin 9       |
+| IN3     | Arduino Pin 10      |
+| IN4     | Arduino Pin 11      |
+| +       | Harici 5V (regülatör çıkışı) |
+| -       | Ortak GND           |
 
 ### DHT22 Sıcaklık ve Nem Sensörü (Kovan İçi)
-| DHT22 Modül | Arduino Nano |
-|-------------|-------------|
-| VCC         | 5V          |
-| DATA        | Pin 2       |
-| GND         | GND         |
+| DHT22 Modül | Bağlantı           |
+|-------------|--------------------|
+| VCC         | Arduino 5V         |
+| DATA        | Arduino Pin 2      |
+| GND         | Ortak GND          |
 
-> Not: 3 pinli modül versiyonu kullanılıyor, pull-up direnç modül üzerinde mevcut.
+> Not: 3 pinli modül versiyonu, pull-up direnç modül üzerinde mevcut.
+> **Önemli:** DHT22 mutlaka **Arduino 5V'undan** beslenmeli (motor hattından DEĞİL). Aksi halde motor spike'larından zarar görür.
 
 ### LCD 1602A Ekran (HY-1602F6)
-| LCD Pin | Bağlantı            |
-|---------|---------------------|
-| VSS (1) | GND                 |
-| VDD (2) | 5V                  |
-| V0  (3) | Potansiyometre orta bacak (kontrast) |
-| RS  (4) | Pin 12              |
-| RW  (5) | GND                 |
-| E   (6) | Pin 13              |
-| D4  (11)| Pin 4               |
-| D5  (12)| Pin 5               |
-| D6  (13)| Pin 6               |
-| D7  (14)| Pin 7               |
-| A   (15)| 5V (arka ışık +)    |
-| K   (16)| GND (arka ışık -)   |
+| LCD Pin | Bağlantı                          |
+|---------|-----------------------------------|
+| VSS (1) | Ortak GND                         |
+| VDD (2) | Arduino 5V                        |
+| V0  (3) | Potansiyometre orta bacak         |
+| RS  (4) | Arduino Pin 12                    |
+| RW  (5) | Ortak GND                         |
+| E   (6) | Arduino Pin 13                    |
+| D4  (11)| Arduino Pin 4                     |
+| D5  (12)| Arduino Pin 5                     |
+| D6  (13)| Arduino Pin 6                     |
+| D7  (14)| Arduino Pin 7                     |
+| A   (15)| Harici 5V (arka ışık +)           |
+| K   (16)| Ortak GND (arka ışık -)           |
 
-> Not: 4-bit modda kullanılıyor (D0-D3 boş kalıyor). Kontrast için 10kΩ B10K potansiyometre; uçları 5V ve GND, orta bacak V0'a.
+> Not: 4-bit modda kullanılıyor (D0-D3 boş kalıyor). Mantık devresi (VDD) Arduino 5V'unda, arka ışık (A) harici 5V'da.
+
+### Potansiyometre 10kΩ B10K (LCD Kontrast)
+| Potansiyometre Bacak | Bağlantı                |
+|----------------------|-------------------------|
+| Sol bacak            | Arduino 5V              |
+| Orta bacak (wiper)   | LCD V0 (Pin 3)          |
+| Sağ bacak            | Ortak GND               |
+
+> Not: Sol/sağ uç bağlantıları yer değiştirebilir, sadece dönüş yönü ters olur. Çevirerek kontrastı ayarla.
 
 ## Kullanılan Pinler
 - Pin 2  → DHT22 Sensör (DATA)

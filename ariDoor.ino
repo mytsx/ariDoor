@@ -16,7 +16,7 @@
       VSS->GND, VDD->5V, RW->GND, V0->Pot orta, A->5V, K->GND
 */
 
-#include <Stepper.h>
+#include <AccelStepper.h>
 #include <DHT.h>
 #include <LiquidCrystal.h>
 
@@ -37,11 +37,21 @@
 #define LCD_D7 7
 
 // --- Motor Ayarlari ---
-const int ADIM_PER_TUR = 2048;
-const int MOTOR_HIZ = 10; // RPM
+// HALF4WIRE: 8-step half-step modu, daha tork ve akıcı hareket
+// 28BYJ-48 half-step: 4096 adim/tur. Kalibrasyon: 150 mm = 9318 logik adim
+// (Fiziksel ölçüm sonucu, teorik 9984 değil)
+const int MAX_HIZ = 800;        // half-step/sn
+const int IVME = 500;            // half-step/sn²
+const int TIK_ADIM = 128;        // SAG/SOL bir tıkta hareket (eski 64 full = 128 half)
+
+// Mekanik asimetri telafisi (sürgü ileri yönde fazla, geri yönde az hareket ediyor)
+// Logical adim → fiziksel motor adımı çevrim oranları
+const float ACMA_OLCEK = 0.89;   // ileri yön (sürgü açılıyor)
+const float KAPAMA_OLCEK = 1.68; // geri yön (sürgü kapanıyor)
 
 // --- Nesneler ---
-Stepper motor(ADIM_PER_TUR, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
+// AccelStepper pin sırası: IN1, IN3, IN2, IN4 (28BYJ-48 için bobin sırası)
+AccelStepper motor(AccelStepper::HALF4WIRE, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
 DHT dht(DHT_PIN, DHT_TIP);
 LiquidCrystal lcd(LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
 
@@ -49,7 +59,7 @@ LiquidCrystal lcd(LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
 byte derece[8] = {0x06, 0x09, 0x09, 0x06, 0x00, 0x00, 0x00, 0x00};
 
 // --- Durum ---
-long mevcutAdim = 0;
+long logikAdim = 0;  // HTML'in gördüğü adim (kalibrasyona göre 0..9318 = 0..150 mm)
 
 // --- Zamanlama ---
 unsigned long sonOkuma = 0;
@@ -57,7 +67,8 @@ const unsigned long OKUMA_ARASI = 2000;
 
 void setup() {
   Serial.begin(9600);
-  motor.setSpeed(MOTOR_HIZ);
+  motor.setMaxSpeed(MAX_HIZ);
+  motor.setAcceleration(IVME);
   dht.begin();
 
   lcd.begin(16, 2);
@@ -115,41 +126,44 @@ void sensorOku() {
   Serial.print(",\"nem\":");
   if (isnan(nem)) Serial.print("null"); else Serial.print(nem, 1);
   Serial.print(",\"adim\":");
-  Serial.print(mevcutAdim);
+  Serial.print(logikAdim);
   Serial.println("}");
+}
+
+void hareket(long hedef) {
+  long fark = hedef - logikAdim;
+  if (fark == 0) return;
+
+  long fizikselFark;
+  if (fark > 0) {
+    fizikselFark = (long)(fark * ACMA_OLCEK);
+  } else {
+    fizikselFark = (long)(fark * KAPAMA_OLCEK);
+  }
+  motor.move(fizikselFark);
+  motor.runToPosition();
+  logikAdim = hedef;
 }
 
 void komutIsle(String komut) {
   if (komut == "SAG") {
-    motor.step(64);
-    mevcutAdim += 64;
-    adimBildir();
+    hareket(logikAdim + TIK_ADIM);
   }
   else if (komut == "SOL") {
-    motor.step(-64);
-    mevcutAdim -= 64;
-    adimBildir();
+    hareket(logikAdim - TIK_ADIM);
   }
   else if (komut == "SIFIR") {
-    if (mevcutAdim != 0) {
-      motor.step(-mevcutAdim);
-      mevcutAdim = 0;
-    }
-    adimBildir();
+    hareket(0);
   }
   else if (komut.startsWith("GIT:")) {
     long hedef = komut.substring(4).toInt();
-    long fark = hedef - mevcutAdim;
-    if (fark != 0) {
-      motor.step(fark);
-      mevcutAdim = hedef;
-    }
-    adimBildir();
+    hareket(hedef);
   }
+  adimBildir();
 }
 
 void adimBildir() {
   Serial.print("{\"adim\":");
-  Serial.print(mevcutAdim);
+  Serial.print(logikAdim);
   Serial.println("}");
 }

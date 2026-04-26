@@ -239,7 +239,9 @@
   let port, reader, writer;
   let bagli = false;
 
-  const MM_PER_ADIM = 0.0153;
+  // Kalibrasyon: sürgü 0'dan 150mm'ye (15cm tam açık) ulaşmak için 9318 yarım-adım
+  // (Fiziksel ölçümle kalibre edildi — teorik 9984 değil)
+  const MM_PER_ADIM = 150 / 9318;
 
   async function baglan() {
     try {
