@@ -65,8 +65,20 @@
 
 > Not: Sol/sağ uç bağlantıları yer değiştirebilir, sadece dönüş yönü ters olur. Çevirerek kontrastı ayarla.
 
+### HW-504 Joystick (Mod ve Hedef Ayarı)
+| HW-504 Pin | Bağlantı       | Görev                                   |
+|------------|----------------|-----------------------------------------|
+| GND        | Ortak GND      | Toprak                                  |
+| +5V        | Arduino 5V     | Güç (motor hattına DEĞİL)               |
+| VRx        | Arduino A0     | X ekseni — sıcaklık ayarı (sağ/sol)     |
+| VRy        | Arduino A1     | Y ekseni — nem ayarı (yukarı/aşağı)     |
+| SW         | Arduino Pin 3  | Buton — mod geçişi (SENSOR ↔ AYAR)      |
+
+> Not: Buton dahili pull-up ile çalışır (`INPUT_PULLUP`), dış direnç gerekmez. Joystick'in 5V'u DHT22 ile aynı hassas hattan beslenmeli (motor hattından değil).
+
 ## Kullanılan Pinler
 - Pin 2  → DHT22 Sensör (DATA)
+- Pin 3  → Joystick SW (buton)
 - Pin 4  → LCD D4
 - Pin 5  → LCD D5
 - Pin 6  → LCD D6
@@ -77,6 +89,8 @@
 - Pin 11 → Step Motor IN4
 - Pin 12 → LCD RS
 - Pin 13 → LCD E
+- A0     → Joystick VRx (X ekseni — sıcaklık)
+- A1     → Joystick VRy (Y ekseni — nem)
 
 ## Boş Pinler
-- Pin 3, A0-A7
+- A2-A7

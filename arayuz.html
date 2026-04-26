@@ -158,6 +158,59 @@
     margin-top: 5px;
   }
 
+  /* Mod Bar */
+  .mode-bar {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: #1a1a2e;
+    padding: 12px 20px;
+    border-radius: 12px;
+    border: 1px solid #2a2a4a;
+    margin-bottom: 20px;
+    max-width: 700px;
+    width: 100%;
+    font-size: 14px;
+  }
+  .mode-sensor { color: #2ecc71; font-size: 16px; }
+  .mode-ayar   { color: #f39c12; font-size: 16px; }
+  #modBtn {
+    background: transparent;
+    color: #f5a623;
+    border: 1px solid #f5a623;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-left: auto;
+    font-size: 13px;
+  }
+  #modBtn:hover:not(:disabled) { background: #f5a623; color: #000; }
+  #modBtn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* Hedef Kart */
+  .target-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 10px;
+  }
+  .target-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid #f5a623;
+    background: transparent;
+    color: #f5a623;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .target-btn:hover:not(:disabled) { background: #f5a623; color: #000; }
+  .target-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  .target-val {
+    font-size: 24px;
+    font-weight: bold;
+    color: #fff;
+  }
+
   /* Log */
   .log-card { grid-column: 1 / -1; }
   .log {
@@ -185,6 +238,12 @@
   <button class="disconnect-btn" id="disconnectBtn" onclick="durdur()">Durdur ve Kes</button>
 </div>
 
+<div class="mode-bar">
+  <span>Mod: <strong id="modVal" class="mode-sensor">SENSOR</strong></span>
+  <span style="color:#666; font-size:12px;">SENSOR = otomatik · AYAR = hedef ayarı</span>
+  <button id="modBtn" onclick="modDegistir()" disabled>Modu Degistir</button>
+</div>
+
 <div class="dashboard">
   <!-- Sıcaklık -->
   <div class="card">
@@ -202,6 +261,26 @@
       <span class="no-data">--</span>
     </div>
     <span class="card-unit">%</span>
+  </div>
+
+  <!-- Hedef Sıcaklık -->
+  <div class="card">
+    <div class="card-title">Hedef Sicaklik (tam acik noktasi)</div>
+    <div class="target-controls">
+      <button class="target-btn" id="hedefSicAzalt" onclick="hedefDegistir('SIC', -5)" disabled>−</button>
+      <span class="target-val" id="hedefSicVal">30&deg;C</span>
+      <button class="target-btn" id="hedefSicArttir" onclick="hedefDegistir('SIC', 5)" disabled>+</button>
+    </div>
+  </div>
+
+  <!-- Hedef Nem -->
+  <div class="card">
+    <div class="card-title">Hedef Nem</div>
+    <div class="target-controls">
+      <button class="target-btn" id="hedefNemAzalt" onclick="hedefDegistir('NEM', -5)" disabled>−</button>
+      <span class="target-val" id="hedefNemVal">50%</span>
+      <button class="target-btn" id="hedefNemArttir" onclick="hedefDegistir('NEM', 5)" disabled>+</button>
+    </div>
   </div>
 
   <!-- Motor Kontrol -->
@@ -238,6 +317,9 @@
 <script>
   let port, reader, writer;
   let bagli = false;
+  let mod = 'SENSOR';
+  let hedefSic = 30.0;
+  let hedefNem = 50.0;
 
   // Kalibrasyon: sürgü 0'dan 150mm'ye (15cm tam açık) ulaşmak için 9318 yarım-adım
   // (Fiziksel ölçümle kalibre edildi — teorik 9984 değil)
@@ -261,10 +343,9 @@
       document.getElementById('connectBtn').classList.add('connected');
       document.getElementById('connectBtn').disabled = true;
       document.getElementById('disconnectBtn').style.display = 'inline-block';
-      document.getElementById('solBtn').disabled = false;
-      document.getElementById('sagBtn').disabled = false;
-      document.getElementById('sifirBtn').disabled = false;
-      document.getElementById('mmSlider').disabled = false;
+      ['solBtn','sagBtn','sifirBtn','mmSlider','modBtn',
+       'hedefSicAzalt','hedefSicArttir','hedefNemAzalt','hedefNemArttir']
+        .forEach(id => document.getElementById(id).disabled = false);
 
       logEkle('Arduino baglantisi kuruldu', 'ok');
       serialOku();
@@ -317,6 +398,22 @@
     komutGonder('GIT:' + hedefAdim);
   }
 
+  function modDegistir() {
+    if (!bagli) return;
+    komutGonder('MOD:' + (mod === 'SENSOR' ? 'AYAR' : 'SENSOR'));
+  }
+
+  function hedefDegistir(tip, delta) {
+    if (!bagli) return;
+    if (tip === 'SIC') {
+      hedefSic = Math.max(0, Math.min(50, hedefSic + delta));
+      komutGonder('HEDEFSIC:' + hedefSic.toFixed(1));
+    } else {
+      hedefNem = Math.max(0, Math.min(100, hedefNem + delta));
+      komutGonder('HEDEFNEM:' + hedefNem.toFixed(0));
+    }
+  }
+
   function guncelle(veri) {
     if (veri.sic !== undefined && veri.sic !== null) {
       document.getElementById('sicVal').textContent = veri.sic.toFixed(1);
@@ -329,6 +426,20 @@
       const mm = (veri.adim * MM_PER_ADIM).toFixed(1);
       document.getElementById('motorMm').textContent = mm + ' mm';
       document.getElementById('mmSlider').value = mm;
+    }
+    if (veri.mod !== undefined) {
+      mod = veri.mod;
+      const elem = document.getElementById('modVal');
+      elem.textContent = mod;
+      elem.className = mod === 'SENSOR' ? 'mode-sensor' : 'mode-ayar';
+    }
+    if (veri.hedefSic !== undefined) {
+      hedefSic = veri.hedefSic;
+      document.getElementById('hedefSicVal').innerHTML = hedefSic.toFixed(0) + '&deg;C';
+    }
+    if (veri.hedefNem !== undefined) {
+      hedefNem = veri.hedefNem;
+      document.getElementById('hedefNemVal').textContent = hedefNem.toFixed(0) + '%';
     }
   }
 
@@ -355,10 +466,9 @@
     document.getElementById('connectBtn').classList.remove('connected');
     document.getElementById('connectBtn').disabled = false;
     document.getElementById('disconnectBtn').style.display = 'none';
-    document.getElementById('solBtn').disabled = true;
-    document.getElementById('sagBtn').disabled = true;
-    document.getElementById('sifirBtn').disabled = true;
-    document.getElementById('mmSlider').disabled = true;
+    ['solBtn','sagBtn','sifirBtn','mmSlider','modBtn',
+     'hedefSicAzalt','hedefSicArttir','hedefNemAzalt','hedefNemArttir']
+      .forEach(id => document.getElementById(id).disabled = true);
 
     logEkle('Baglanti kesildi - port serbest', 'error');
   }
