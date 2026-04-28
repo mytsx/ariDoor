@@ -16,7 +16,6 @@
       VSS->GND, VDD->5V, RW->GND, V0->Pot orta, A->5V, K->GND
 */
 
-#include <AccelStepper.h>
 #include <DHT.h>
 #include <LiquidCrystal.h>
 
@@ -41,23 +40,39 @@
 #define JS_SW   3
 
 // --- Motor Ayarlari ---
-// HALF4WIRE: 8-step half-step modu, daha tork ve akıcı hareket
+// 8-step half-step modu, daha tork ve akıcı hareket
 // 28BYJ-48 half-step: 4096 adim/tur. Kalibrasyon: 150 mm = 9318 logik adim
 // (Fiziksel ölçüm sonucu, teorik 9984 değil)
-const int MAX_HIZ = 800;        // half-step/sn
-const int IVME = 500;            // half-step/sn²
+const int MAX_HIZ = 160;        // half-step/sn - kapalı uçtan açma testi için düşük hız
+const int IVME = 50;             // half-step/sn² - ilk kalkışta adım kaçırmayı azaltır
 const int TIK_ADIM = 128;        // SAG/SOL bir tıkta hareket (eski 64 full = 128 half)
+const long MAX_LOGIK_ADIM = 9318; // 150 mm tam hareket
+const float MAX_MM = 150.0;
 
 // Mekanik asimetri telafisi
 // Konvansiyon: 0 mm = açık, 150 mm = kapalı
-// Motor + yönü = sürgü RETRACT = açılma. Motor − yönü = sürgü EXTEND = kapanma.
-// Yani mm azalış (açılma) → motor + yönde, mm artış (kapanma) → motor − yönde
-const float ACMA_OLCEK = 0.89;   // motor + (açma), fazla itiyor → daha az bas
-const float KAPAMA_OLCEK = 1.68; // motor − (kapama), az itiyor → daha çok bas
+// Doğrudan half-step sürücüde motor − yönü = kapanma, motor + yönü = açılma.
+// Yani mm artış (kapanma) → motor − yönde, mm azalış (açılma) → motor + yönde.
+const float ACMA_OLCEK = 0.876;  // motor + (açma), 150 mm açmada yaklaşık 1 mm fazla hareket düzeltildi
+const float KAPAMA_OLCEK = 0.873; // motor − (kapama), 40 mm komut = 77 mm ölçümden kalibre edildi
+
+// --- Motor Half-Step Dizisi ---
+// BAGLANTI.md sırası kullanılır: IN1, IN2, IN3, IN4.
+// Bu dizi AccelStepper soyutlamasını bypass eder; yön testinde + ve - kesin ters çalışmalı.
+const byte MOTOR_DIZI[8][4] = {
+  {1, 0, 0, 0},
+  {1, 1, 0, 0},
+  {0, 1, 0, 0},
+  {0, 1, 1, 0},
+  {0, 0, 1, 0},
+  {0, 0, 1, 1},
+  {0, 0, 0, 1},
+  {1, 0, 0, 1}
+};
+int motorDiziIndeks = 0;
+const unsigned int MOTOR_ADIM_GECIKME_US = 1250; // yaklaşık 800 half-step/sn
 
 // --- Nesneler ---
-// AccelStepper pin sırası: IN1, IN3, IN2, IN4 (28BYJ-48 için bobin sırası)
-AccelStepper motor(AccelStepper::HALF4WIRE, MOTOR_IN1, MOTOR_IN3, MOTOR_IN2, MOTOR_IN4);
 DHT dht(DHT_PIN, DHT_TIP);
 LiquidCrystal lcd(LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
 
@@ -65,10 +80,9 @@ LiquidCrystal lcd(LCD_RS, LCD_E, LCD_D4, LCD_D5, LCD_D6, LCD_D7);
 byte derece[8] = {0x06, 0x09, 0x09, 0x06, 0x00, 0x00, 0x00, 0x00};
 
 // --- Durum ---
-// Başlangıçta sürgünün tamamen kapalı olduğu varsayılır (150 mm = kapalı).
-// Kullanıcı cihazı çalıştırmadan önce sürgüyü manuel olarak kapalı konuma getirmeli.
-// İlk sensör okumasıyla otomatik kontrol tetiklenir ve sürgü o anki koşullara göre konumlanır.
-long logikAdim = 9318;  // HTML'in gördüğü adim (0..9318 = 0..150 mm). Başlangıç = kapalı.
+// Kalibrasyon/test aşaması: başlangıçta sürgünün tamamen açık olduğu varsayılır.
+// 0 mm = açık, 150 mm = kapalı. Fiziksel konum değişirse SETADIM komutuyla senkronla.
+long logikAdim = 0;  // HTML'in gördüğü adim (0..9318 = 0..150 mm). Başlangıç = açık.
 
 enum Mod { SENSOR, AYAR };
 Mod mevcutMod = SENSOR;
@@ -93,6 +107,7 @@ const unsigned long OTO_ARASI = 10000;  // 10 sn'de bir auto kontrol
 const float MIN_HAREKET_MM = 2.0;
 unsigned long sonOto = 0;
 bool ilkOtoYapildi = false;  // İlk sensör okumasıyla auto kontrolü tetikle
+bool otoAktif = false;       // Kalibrasyon bitene kadar otomatik kontrol kapalı
 
 // --- Zamanlama ---
 unsigned long sonOkuma = 0;
@@ -100,8 +115,11 @@ const unsigned long OKUMA_ARASI = 2000;
 
 void setup() {
   Serial.begin(9600);
-  motor.setMaxSpeed(MAX_HIZ);
-  motor.setAcceleration(IVME);
+  pinMode(MOTOR_IN1, OUTPUT);
+  pinMode(MOTOR_IN2, OUTPUT);
+  pinMode(MOTOR_IN3, OUTPUT);
+  pinMode(MOTOR_IN4, OUTPUT);
+  motorCikisYaz(0);
   dht.begin();
 
   pinMode(JS_SW, INPUT_PULLUP);
@@ -126,12 +144,14 @@ void loop() {
 
   joystickKontrol();
 
-  bool otoZamani = millis() - sonOto >= OTO_ARASI;
-  bool ilkVeriHazir = !ilkOtoYapildi && !isnan(sonSic) && !isnan(sonNem);
-  if (otoZamani || ilkVeriHazir) {
-    sonOto = millis();
-    ilkOtoYapildi = true;
-    otoKontrol();
+  if (otoAktif) {
+    bool otoZamani = millis() - sonOto >= OTO_ARASI;
+    bool ilkVeriHazir = !ilkOtoYapildi && !isnan(sonSic) && !isnan(sonNem);
+    if (otoZamani || ilkVeriHazir) {
+      sonOto = millis();
+      ilkOtoYapildi = true;
+      otoKontrol();
+    }
   }
 
   if (Serial.available() > 0) {
@@ -156,12 +176,16 @@ void sensorOku() {
   if (isnan(nem)) Serial.print("null"); else Serial.print(nem, 1);
   Serial.print(",\"adim\":");
   Serial.print(logikAdim);
+  Serial.print(",\"mm\":");
+  Serial.print(adimToMm(logikAdim), 1);
   Serial.print(",\"mod\":\"");
   Serial.print(mevcutMod == SENSOR ? "SENSOR" : "AYAR");
   Serial.print("\",\"hedefSic\":");
   Serial.print(hedefSic, 1);
   Serial.print(",\"hedefNem\":");
   Serial.print(hedefNem, 1);
+  Serial.print(",\"oto\":");
+  Serial.print(otoAktif ? "true" : "false");
   Serial.println("}");
 }
 
@@ -196,6 +220,7 @@ void lcdGuncelle(float sic, float nem) {
 }
 
 void hareket(long hedef) {
+  hedef = constrain(hedef, 0L, MAX_LOGIK_ADIM);
   long fark = hedef - logikAdim;
   if (fark == 0) return;
 
@@ -204,11 +229,10 @@ void hareket(long hedef) {
     // mm artış = kapanma → motor − yönde
     fizikselFark = -(long)(fark * KAPAMA_OLCEK);
   } else {
-    // mm azalış = açılma → motor + yönde (fark negatif, − ile pozitif olur)
+    // mm azalış = açılma → motor + yönde
     fizikselFark = -(long)(fark * ACMA_OLCEK);
   }
-  motor.move(fizikselFark);
-  motor.runToPosition();
+  motorHamHareket(fizikselFark);
   logikAdim = hedef;
 }
 
@@ -277,8 +301,8 @@ void otoKontrol() {
   }
   hedefMm = constrain(hedefMm, 0, 150);
 
-  long hedefAdimYeni = (long)(hedefMm * 9318L / 150);
-  long minFark = (long)(MIN_HAREKET_MM * 9318L / 150);
+  long hedefAdimYeni = mmToAdim(hedefMm);
+  long minFark = mmToAdim(MIN_HAREKET_MM);
 
   if (abs(hedefAdimYeni - logikAdim) >= minFark) {
     hareket(hedefAdimYeni);
@@ -303,6 +327,55 @@ void komutIsle(String komut) {
     long hedef = komut.substring(4).toInt();
     hareket(hedef);
     adimBildir();
+  }
+  else if (komut.startsWith("RAW:")) {
+    long adim = komut.substring(4).toInt();
+    motorHamHareket(adim);
+    rawBildir(adim);
+  }
+  else if (komut == "LEDTEST") {
+    ledTest();
+  }
+  else if (komut.startsWith("GITMM:")) {
+    float hedefMm = komut.substring(6).toFloat();
+    hareket(mmToAdim(hedefMm));
+    adimBildir();
+  }
+  else if (komut.startsWith("KAPATMM:")) {
+    float mm = komut.substring(8).toFloat();
+    hareket(logikAdim + mmToAdim(mm));
+    adimBildir();
+  }
+  else if (komut.startsWith("ACMAMM:")) {
+    float mm = komut.substring(7).toFloat();
+    hareket(logikAdim - mmToAdim(mm));
+    adimBildir();
+  }
+  else if (komut.startsWith("KAPATCM:")) {
+    float cm = komut.substring(8).toFloat();
+    hareket(logikAdim + mmToAdim(cm * 10.0));
+    adimBildir();
+  }
+  else if (komut.startsWith("ACMACM:")) {
+    float cm = komut.substring(7).toFloat();
+    hareket(logikAdim - mmToAdim(cm * 10.0));
+    adimBildir();
+  }
+  else if (komut.startsWith("SETADIM:")) {
+    logikAdim = constrain(komut.substring(8).toInt(), 0L, MAX_LOGIK_ADIM);
+    adimBildir();
+  }
+  else if (komut.startsWith("SETMM:")) {
+    logikAdim = mmToAdim(komut.substring(6).toFloat());
+    adimBildir();
+  }
+  else if (komut == "OTO:1") {
+    otoAktif = true;
+    otoBildir();
+  }
+  else if (komut == "OTO:0") {
+    otoAktif = false;
+    otoBildir();
   }
   else if (komut == "MOD:SENSOR") {
     if (mevcutMod != SENSOR) modDegistir();
@@ -339,5 +412,73 @@ void ayarBildir() {
 void adimBildir() {
   Serial.print("{\"adim\":");
   Serial.print(logikAdim);
+  Serial.print(",\"mm\":");
+  Serial.print(adimToMm(logikAdim), 1);
   Serial.println("}");
+}
+
+long mmToAdim(float mm) {
+  mm = constrain(mm, 0.0, MAX_MM);
+  return (long)(mm * MAX_LOGIK_ADIM / MAX_MM + 0.5);
+}
+
+float adimToMm(long adim) {
+  adim = constrain(adim, 0L, MAX_LOGIK_ADIM);
+  return (float)adim * MAX_MM / (float)MAX_LOGIK_ADIM;
+}
+
+void otoBildir() {
+  Serial.print("{\"oto\":");
+  Serial.print(otoAktif ? "true" : "false");
+  Serial.println("}");
+}
+
+void rawBildir(long adim) {
+  Serial.print("{\"raw\":");
+  Serial.print(adim);
+  Serial.println("}");
+}
+
+void motorCikisYaz(int indeks) {
+  indeks = (indeks + 8) % 8;
+  digitalWrite(MOTOR_IN1, MOTOR_DIZI[indeks][0]);
+  digitalWrite(MOTOR_IN2, MOTOR_DIZI[indeks][1]);
+  digitalWrite(MOTOR_IN3, MOTOR_DIZI[indeks][2]);
+  digitalWrite(MOTOR_IN4, MOTOR_DIZI[indeks][3]);
+}
+
+void motorHamHareket(long adim) {
+  int yon = (adim >= 0) ? 1 : -1;
+  unsigned long kalan = (adim >= 0) ? adim : -adim;
+
+  while (kalan > 0) {
+    motorDiziIndeks += yon;
+    if (motorDiziIndeks >= 8) motorDiziIndeks = 0;
+    if (motorDiziIndeks < 0) motorDiziIndeks = 7;
+    motorCikisYaz(motorDiziIndeks);
+    delayMicroseconds(MOTOR_ADIM_GECIKME_US);
+    kalan--;
+  }
+}
+
+void ledTest() {
+  const int pinler[4] = {MOTOR_IN1, MOTOR_IN2, MOTOR_IN3, MOTOR_IN4};
+  for (int tur = 0; tur < 2; tur++) {
+    for (int i = 0; i < 4; i++) {
+      digitalWrite(MOTOR_IN1, LOW);
+      digitalWrite(MOTOR_IN2, LOW);
+      digitalWrite(MOTOR_IN3, LOW);
+      digitalWrite(MOTOR_IN4, LOW);
+      digitalWrite(pinler[i], HIGH);
+      Serial.print("{\"led\":\"");
+      Serial.print(i == 0 ? "IN1/A" : i == 1 ? "IN2/B" : i == 2 ? "IN3/C" : "IN4/D");
+      Serial.println("\"}");
+      delay(1000);
+    }
+  }
+  digitalWrite(MOTOR_IN1, LOW);
+  digitalWrite(MOTOR_IN2, LOW);
+  digitalWrite(MOTOR_IN3, LOW);
+  digitalWrite(MOTOR_IN4, LOW);
+  Serial.println("{\"ledtest\":\"bitti\"}");
 }
