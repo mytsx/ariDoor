@@ -48,6 +48,8 @@ const int IVME = 50;             // half-step/sn² - ilk kalkışta adım kaçı
 const int TIK_ADIM = 128;        // SAG/SOL bir tıkta hareket (eski 64 full = 128 half)
 const long MAX_LOGIK_ADIM = 9318; // 150 mm tam hareket
 const float MAX_MM = 150.0;
+const float SIC_KAPALI = 5.0;    // 5°C ve altı = tam kapalı
+const float SIC_ACIK = 30.0;     // 30°C ve üstü = tam açık
 
 // Mekanik asimetri telafisi
 // Konvansiyon: 0 mm = açık, 150 mm = kapalı
@@ -84,7 +86,7 @@ byte derece[8] = {0x06, 0x09, 0x09, 0x06, 0x00, 0x00, 0x00, 0x00};
 // 0 mm = açık, 150 mm = kapalı. Fiziksel konum değişirse SETADIM komutuyla senkronla.
 long logikAdim = 0;  // HTML'in gördüğü adim (0..9318 = 0..150 mm). Başlangıç = açık.
 
-enum Mod { SENSOR, AYAR };
+enum Mod { SENSOR, AYAR, KONTROL };
 Mod mevcutMod = SENSOR;
 
 float hedefSic = 30.0;  // Bu sıcaklık ve üstünde sürgü tamamen açık
@@ -103,11 +105,11 @@ unsigned long sonButonZaman = 0;
 const unsigned long BUTON_DEBOUNCE = 50;
 
 // --- Auto kontrol ---
-const unsigned long OTO_ARASI = 10000;  // 10 sn'de bir auto kontrol
+const unsigned long OTO_ARASI = 300000UL;  // SENSOR modunda 5 dk'da bir auto kontrol
 const float MIN_HAREKET_MM = 2.0;
 unsigned long sonOto = 0;
 bool ilkOtoYapildi = false;  // İlk sensör okumasıyla auto kontrolü tetikle
-bool otoAktif = false;       // Kalibrasyon bitene kadar otomatik kontrol kapalı
+bool otoAktif = true;
 
 // --- Zamanlama ---
 unsigned long sonOkuma = 0;
@@ -144,13 +146,13 @@ void loop() {
 
   joystickKontrol();
 
-  if (otoAktif) {
+  if (otoAktif && mevcutMod == SENSOR) {
     bool otoZamani = millis() - sonOto >= OTO_ARASI;
-    bool ilkVeriHazir = !ilkOtoYapildi && !isnan(sonSic) && !isnan(sonNem);
+    bool ilkVeriHazir = !ilkOtoYapildi && !isnan(sonSic);
     if (otoZamani || ilkVeriHazir) {
       sonOto = millis();
       ilkOtoYapildi = true;
-      otoKontrol();
+      pozisyonGuncelle(false);
     }
   }
 
@@ -179,7 +181,7 @@ void sensorOku() {
   Serial.print(",\"mm\":");
   Serial.print(adimToMm(logikAdim), 1);
   Serial.print(",\"mod\":\"");
-  Serial.print(mevcutMod == SENSOR ? "SENSOR" : "AYAR");
+  Serial.print(modAdi());
   Serial.print("\",\"hedefSic\":");
   Serial.print(hedefSic, 1);
   Serial.print(",\"hedefNem\":");
@@ -191,7 +193,9 @@ void sensorOku() {
 
 void lcdGuncelle(float sic, float nem) {
   lcd.setCursor(0, 0);
-  if (mevcutMod == AYAR) {
+  if (mevcutMod == KONTROL) {
+    lcd.print("Kapi Kontrol   ");
+  } else if (mevcutMod == AYAR) {
     lcd.print("Hed: ");
     lcd.print(hedefSic, 1);
     lcd.write(byte(0));
@@ -206,7 +210,11 @@ void lcdGuncelle(float sic, float nem) {
   }
 
   lcd.setCursor(0, 1);
-  if (mevcutMod == AYAR) {
+  if (mevcutMod == KONTROL) {
+    lcd.print("Konum:");
+    lcd.print(adimToMm(logikAdim), 1);
+    lcd.print("mm   ");
+  } else if (mevcutMod == AYAR) {
     lcd.print("Hed: ");
     lcd.print(hedefNem, 1);
     lcd.print("%      ");
@@ -246,12 +254,31 @@ void joystickKontrol() {
   }
   sonButonDurum = butonDurum;
 
-  // Yön kontrol — sadece AYAR modunda hedef değerleri ayarlar
-  if (mevcutMod != AYAR) return;
+  // Yön kontrol — AYAR modunda hedef değerleri, KONTROL modunda kapıyı ayarlar
+  if (mevcutMod != AYAR && mevcutMod != KONTROL) return;
   if (millis() - sonAyar < JS_ARASI) return;
 
   int x = analogRead(JS_X);
   int y = analogRead(JS_Y);
+
+  if (mevcutMod == KONTROL) {
+    bool hareketEtti = false;
+    if (x > 512 + JS_ESIK) {
+      hareket(logikAdim + TIK_ADIM);
+      hareketEtti = true;
+    } else if (x < 512 - JS_ESIK) {
+      hareket(logikAdim - TIK_ADIM);
+      hareketEtti = true;
+    }
+
+    if (hareketEtti) {
+      sonAyar = millis();
+      adimBildir();
+      lcdGuncelle(sonSic, sonNem);
+    }
+    return;
+  }
+
   bool degisti = false;
 
   if (x > 512 + JS_ESIK) {
@@ -275,36 +302,59 @@ void joystickKontrol() {
     hedefNem = constrain(hedefNem, 0.0, 100.0);
     sonAyar = millis();
     ayarBildir();
+    if (otoAktif) {
+      pozisyonGuncelle(true);
+    }
   }
 }
 
 void modDegistir() {
-  mevcutMod = (mevcutMod == SENSOR) ? AYAR : SENSOR;
+  Mod yeniMod;
+  if (mevcutMod == SENSOR) {
+    yeniMod = AYAR;
+  } else if (mevcutMod == AYAR) {
+    yeniMod = KONTROL;
+  } else {
+    yeniMod = SENSOR;
+  }
+  modAyarla(yeniMod);
+}
+
+void modAyarla(Mod yeniMod) {
+  mevcutMod = yeniMod;
   modBildir();
-  if (!isnan(sonSic) || !isnan(sonNem) || mevcutMod == AYAR) {
+
+  if (mevcutMod == SENSOR) {
+    sensorOku();
+    if (otoAktif) {
+      pozisyonGuncelle(true);
+      sonOto = millis();
+      ilkOtoYapildi = true;
+    }
+  } else if (mevcutMod == AYAR) {
+    lcdGuncelle(sonSic, sonNem);
+    if (otoAktif) {
+      pozisyonGuncelle(true);
+    }
+  } else {
     lcdGuncelle(sonSic, sonNem);
   }
 }
 
 void otoKontrol() {
-  if (isnan(sonSic)) return;
+  pozisyonGuncelle(false);
+}
 
-  // Lineer mapping: 5°C → 150 mm (kapalı), hedefSic → 0 mm (açık)
-  int hedefMm;
-  if (sonSic <= 5.0) {
-    hedefMm = 150;
-  } else if (sonSic >= hedefSic) {
-    hedefMm = 0;
-  } else {
-    float oran = (hedefSic - sonSic) / (hedefSic - 5.0);
-    hedefMm = (int)(150.0 * oran);
-  }
-  hedefMm = constrain(hedefMm, 0, 150);
+void pozisyonGuncelle(bool zorla) {
+  if (mevcutMod == KONTROL) return;
 
-  long hedefAdimYeni = mmToAdim(hedefMm);
+  float kontrolSic = (mevcutMod == SENSOR) ? sonSic : hedefSic;
+  if (isnan(kontrolSic)) return;
+
+  long hedefAdimYeni = sicaklikToAdim(kontrolSic);
   long minFark = mmToAdim(MIN_HAREKET_MM);
 
-  if (abs(hedefAdimYeni - logikAdim) >= minFark) {
+  if (zorla || abs(hedefAdimYeni - logikAdim) >= minFark) {
     hareket(hedefAdimYeni);
     adimBildir();
   }
@@ -372,33 +422,57 @@ void komutIsle(String komut) {
   else if (komut == "OTO:1") {
     otoAktif = true;
     otoBildir();
+    if (mevcutMod == SENSOR) {
+      sensorOku();
+      pozisyonGuncelle(true);
+      sonOto = millis();
+      ilkOtoYapildi = true;
+    } else if (mevcutMod == AYAR) {
+      pozisyonGuncelle(true);
+    }
   }
   else if (komut == "OTO:0") {
     otoAktif = false;
     otoBildir();
   }
   else if (komut == "MOD:SENSOR") {
-    if (mevcutMod != SENSOR) modDegistir();
+    if (mevcutMod != SENSOR) modAyarla(SENSOR);
     else modBildir();
   }
   else if (komut == "MOD:AYAR") {
-    if (mevcutMod != AYAR) modDegistir();
+    if (mevcutMod != AYAR) modAyarla(AYAR);
+    else modBildir();
+  }
+  else if (komut == "MOD:KONTROL") {
+    if (mevcutMod != KONTROL) modAyarla(KONTROL);
     else modBildir();
   }
   else if (komut.startsWith("HEDEFSIC:")) {
     hedefSic = constrain(komut.substring(9).toFloat(), 0.0, 50.0);
     ayarBildir();
+    if (otoAktif && mevcutMod == AYAR) {
+      pozisyonGuncelle(true);
+    }
   }
   else if (komut.startsWith("HEDEFNEM:")) {
     hedefNem = constrain(komut.substring(9).toFloat(), 0.0, 100.0);
     ayarBildir();
+    if (otoAktif && mevcutMod == AYAR) {
+      pozisyonGuncelle(true);
+    }
   }
 }
 
 void modBildir() {
   Serial.print("{\"mod\":\"");
-  Serial.print(mevcutMod == SENSOR ? "SENSOR" : "AYAR");
+  Serial.print(modAdi());
   Serial.println("\"}");
+}
+
+const char* modAdi() {
+  if (mevcutMod == SENSOR) return "SENSOR";
+  if (mevcutMod == AYAR) return "AYAR";
+  return "KONTROL";
 }
 
 void ayarBildir() {
@@ -420,6 +494,18 @@ void adimBildir() {
 long mmToAdim(float mm) {
   mm = constrain(mm, 0.0, MAX_MM);
   return (long)(mm * MAX_LOGIK_ADIM / MAX_MM + 0.5);
+}
+
+long sicaklikToAdim(float sic) {
+  return mmToAdim(sicaklikToMm(sic));
+}
+
+float sicaklikToMm(float sic) {
+  if (sic <= SIC_KAPALI) return MAX_MM;
+  if (sic >= SIC_ACIK) return 0.0;
+
+  float oran = (SIC_ACIK - sic) / (SIC_ACIK - SIC_KAPALI);
+  return MAX_MM * oran;
 }
 
 float adimToMm(long adim) {

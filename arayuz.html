@@ -174,6 +174,7 @@
   }
   .mode-sensor { color: #2ecc71; font-size: 16px; }
   .mode-ayar   { color: #f39c12; font-size: 16px; }
+  .mode-kontrol { color: #9b59b6; font-size: 16px; }
   #modBtn {
     background: transparent;
     color: #f5a623;
@@ -240,7 +241,7 @@
 
 <div class="mode-bar">
   <span>Mod: <strong id="modVal" class="mode-sensor">SENSOR</strong></span>
-  <span style="color:#666; font-size:12px;">SENSOR = otomatik · AYAR = hedef ayarı</span>
+  <span style="color:#666; font-size:12px;">SENSOR = otomatik · AYAR = hedef · KONTROL = kapı</span>
   <button id="modBtn" onclick="modDegistir()" disabled>Modu Degistir</button>
 </div>
 
@@ -400,7 +401,8 @@
 
   function modDegistir() {
     if (!bagli) return;
-    komutGonder('MOD:' + (mod === 'SENSOR' ? 'AYAR' : 'SENSOR'));
+    const sonraki = mod === 'SENSOR' ? 'AYAR' : (mod === 'AYAR' ? 'KONTROL' : 'SENSOR');
+    komutGonder('MOD:' + sonraki);
   }
 
   function hedefDegistir(tip, delta) {
@@ -431,7 +433,7 @@
       mod = veri.mod;
       const elem = document.getElementById('modVal');
       elem.textContent = mod;
-      elem.className = mod === 'SENSOR' ? 'mode-sensor' : 'mode-ayar';
+      elem.className = mod === 'SENSOR' ? 'mode-sensor' : (mod === 'AYAR' ? 'mode-ayar' : 'mode-kontrol');
     }
     if (veri.hedefSic !== undefined) {
       hedefSic = veri.hedefSic;

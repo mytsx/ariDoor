@@ -2,21 +2,24 @@
 
 ## Modlar
 
-Sistem iki modda çalışır. Geçiş **HW-504 joystick butonu (SW)** veya web arayüzünden yapılır.
+Sistem üç modda çalışır. Geçiş **HW-504 joystick butonu (SW)** veya web arayüzünden yapılır:
 
-**Otomatik kontrol her iki modda da çalışır.** Mod sadece joystick yön girişlerinin hedef değerleri değiştirip değiştirmediğini belirler.
+`SENSOR → AYAR → KONTROL → SENSOR`
 
-- Auto kontrol döngüsü: her 10 saniyede bir
+**Otomatik pozisyonlama SENSOR ve AYAR modlarında çalışır.** SENSOR modunda sensör sıcaklığına göre, AYAR modunda joystick/web ile ayarlanan sıcaklık değerine göre pozisyon alınır. KONTROL modunda kapı manuel hareket ettirilir.
+
+- SENSOR modu auto kontrol döngüsü: her 5 dakikada bir
+- İlk açılışta sürgü 0 mm (tam açık) kabul edilir; ilk geçerli sensör okumasıyla pozisyon alınır
 - Min hareket eşiği: 2 mm (titreşim/aşırı motor kullanımı önlemek için)
-- Hedef değerler değişince bir sonraki döngüde sürgü yeni hedefe göre konumlanır
+- AYAR modunda sıcaklık değeri değişince sürgü hemen yeni değere göre konumlanır
 
 ### SENSOR Modu (varsayılan)
 
-Joystick yön girişleri yok sayılır. Hedef değerleri sadece web arayüzünden değiştirilebilir.
+Joystick yön girişleri yok sayılır. Sürgü sensörden okunan mevcut sıcaklığa göre konumlanır.
 
 ### AYAR Modu
 
-Joystick yön hareketleriyle hedef sıcaklık/nem ayarlanır.
+Joystick yön hareketleriyle sıcaklık/nem ayarlanır. Bu modda sürgü, joystick/web ile ayarlanan sıcaklık değerine göre konumlanır.
 
 | Joystick Yönü | Etki | Adim |
 |---------------|------|------|
@@ -25,35 +28,42 @@ Joystick yön hareketleriyle hedef sıcaklık/nem ayarlanır.
 | Yukarı        | Hedef nem ↑      | +5 % / 300 ms |
 | Aşağı         | Hedef nem ↓      | -5 % / 300 ms |
 
-LCD ekran AYAR modunda hedef değerleri gösterir, SENSOR modunda mevcut değerleri.
+### KONTROL Modu
+
+Joystick sağ/sol hareketleriyle kapı doğrudan hareket ettirilir.
+
+| Joystick Yönü | Etki |
+|---------------|------|
+| Sağ           | Kapı kapanma yönünde hareket eder |
+| Sol           | Kapı açılma yönünde hareket eder |
+
+LCD ekran SENSOR modunda mevcut değerleri, AYAR modunda hedef değerleri, KONTROL modunda kapı konumunu gösterir.
 
 ## Sürgü Konvansiyonu
 
 - **0 mm = Açık** (sürgü retracted, kovan girişi açık → havalandırma)
 - **150 mm = Kapalı** (sürgü extended, kovan girişi kapalı → ısı korumalı)
-- Başlangıçta sürgü **150 mm (kapalı)** varsayılır. Cihaz çalıştırılmadan önce sürgü manuel olarak kapalı pozisyonda olmalı.
+- Başlangıçta sürgü **0 mm (açık)** varsayılır. Cihaz çalıştırılmadan önce sürgü manuel olarak açık pozisyonda olmalı.
 
 ## Sürgü Konumlama Algoritması
 
 Mevcut sıcaklığa göre **lineer mapping**:
 
 - **5°C ve altı** → 150 mm (tam kapalı)
-- **hedef_sic ve üstü** → 0 mm (tam açık)
+- **30°C ve üstü** → 0 mm (tam açık)
 - Arasında lineer interpolasyon:
 
 ```
-sürgü_mm = 150 × (hedef_sic − mevcut_sic) / (hedef_sic − 5)
+sürgü_mm = 150 × (30 − sicaklik) / (30 − 5)
 ```
 
 ### Mantık
 
 - 5°C alt sınır sabittir (kış güvenliği)
-- Hedef sıcaklık = sürgünün **tamamen açıldığı** üst sınır
-- Mevcut sıcaklık 5°C ile hedef arasında ilerledikçe sürgü 150'den 0'a doğru lineer hareket eder
+- 30°C üst sınırdır; bu sıcaklık ve üstünde sürgü tamamen açık kalır
+- Sıcaklık 5°C ile 30°C arasında ilerledikçe sürgü 150'den 0'a doğru lineer hareket eder
 
 ### Örnek
-
-`hedef_sic = 30°C` (varsayılan):
 
 | Mevcut Sic | Sürgü mm | Yorum |
 |------------|----------|-------|
@@ -65,13 +75,9 @@ sürgü_mm = 150 × (hedef_sic − mevcut_sic) / (hedef_sic − 5)
 | 25°C       | 30       | %20 kapalı |
 | ≥ 30°C     | 0        | Tam açık |
 
-### Hedef Sıcaklık Ayarlama
+### AYAR Modu Sıcaklık Ayarlama
 
-Hedef = "tam açık olsun istediğim üst sıcaklık". 5°C'lik adımlarla joystick veya HTML +/− ile ayarlanır.
-
-- `hedef_sic = 25` → 25°C ve üstünde tam açık (sıcak iklimler için)
-- `hedef_sic = 35` → 35°C ve üstünde tam açık (sıcağa daha toleranslı)
-- `hedef_sic = 20` → 20°C bile açtırır (serin iklimler için)
+AYAR modunda joystick veya HTML +/− ile ayarlanan sıcaklık değeri, sensör sıcaklığı yerine kullanılır. Örneğin AYAR sıcaklığı 20°C ise sürgü 60 mm konuma gider.
 
 > Nem (hedef_nem) şu an algoritmaya etki etmiyor; sadece bilgi olarak gösteriliyor ve joystick'ten ayarlanabiliyor. İleride eklenebilir.
 
@@ -98,8 +104,9 @@ Sebebi:
 |---------------|-------------------------------------------|
 | `MOD:SENSOR`  | SENSOR moduna geç                         |
 | `MOD:AYAR`    | AYAR moduna geç                           |
-| `HEDEFSIC:N`  | Hedef sıcaklığı N °C yap (clamp 20-40)    |
-| `HEDEFNEM:N`  | Hedef nemi N % yap (clamp 30-90)          |
+| `MOD:KONTROL` | KONTROL moduna geç                        |
+| `HEDEFSIC:N`  | AYAR modu sıcaklığını N °C yap (clamp 0-50) |
+| `HEDEFNEM:N`  | AYAR modu nemini N % yap (clamp 0-100)    |
 | `SAG`         | Sürgü 128 yarım-adım ileri (manuel)       |
 | `SOL`         | Sürgü 128 yarım-adım geri (manuel)        |
 | `SIFIR`       | Sürgü 0'a dön                             |
