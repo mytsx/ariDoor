@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ariDoor - Tinkercad Mantığı Bağlantı Şeması</title>
+  <title>Bağlantı Şeması</title>
   <style>
     :root {
       --bg: #f3f4f6;
@@ -140,6 +140,12 @@
     .hole-light { fill: #fff; opacity: 0.82; }
     .pin-block { fill: #1e242c; stroke: #06080a; stroke-width: 1; }
     .pin-socket { fill: #40464f; stroke: #111820; stroke-width: 1; }
+    .socket-hole { fill: #07090d; stroke: #5a6470; stroke-width: 1; }
+    .metal { fill: #d8dde5; stroke: #9da6b3; stroke-width: 1.2; }
+    .brass { fill: #d9b84e; stroke: #927821; stroke-width: 1.2; }
+    .silk { fill: #e7f4ff; font-size: 10px; font-weight: 700; letter-spacing: 0; }
+    .terminal { fill: #2c77c7; stroke: #164d86; stroke-width: 2; }
+    .terminal-hole { fill: #dce7f4; stroke: #12395f; stroke-width: 1.5; }
     .pin-dot { fill: #fff; stroke-width: 3; }
     .red { stroke: var(--arduino-5v); }
     .orange { stroke: var(--external-5v); }
@@ -211,17 +217,17 @@
 <body>
   <main>
     <header>
-      <h1>ariDoor Tinkercad mantığı bağlantı şeması</h1>
+      <h1>Bağlantı Şeması</h1>
       <p>
-        Gerçek ürün fotoğrafları yerine Tinkercad/Fritzing breadboard görünümüne benzeyen sembolik parçalar kullanıldı.
-        Amaç fiziksel ölçekten çok hangi pinin hangi hatta gittiğini temiz göstermek.
+        ariDoor devresindeki güç hatları, modüller ve pin bağlantıları sembolik parçalarla gösterildi.
+        Amaç fiziksel ölçekten çok hangi pinin hangi hatta gittiğini temiz göstermektir.
       </p>
     </header>
 
     <div class="warning">
       <strong>Güç ayrımı</strong>
       <span>Arduino 5V hassas hattı ve regülatörden gelen harici 5V artı hattı birbirine bağlanmaz.</span>
-      <span>Ortak olan tek hat GND'dir: Arduino GND, regülatör OUT-, ULN2003 -, LCD VSS/K/RW, DHT22 GND ve joystick GND aynı 0V referansı kullanır.</span>
+      <span>Ortak olan tek hat GND'dir: Arduino GND, regülatör OUT-, ULN2003A -, LCD VSS/K/RW, DHT22 GND ve HW-504 joystick GND aynı 0V referansı kullanır.</span>
     </div>
 
     <div class="legend" aria-label="Kablo renkleri">
@@ -235,7 +241,7 @@
     </div>
 
     <div class="schematic-wrap">
-      <svg viewBox="0 0 1760 1120" role="img" aria-label="ariDoor Tinkercad tarzı sembolik bağlantı şeması">
+      <svg viewBox="0 0 1760 1120" role="img" aria-label="ariDoor bağlantı şeması">
         <defs>
           <pattern id="holes" width="24" height="24" patternUnits="userSpaceOnUse">
             <circle class="hole-light" cx="12" cy="12" r="6"/>
@@ -251,16 +257,24 @@
         <!-- Breadboard -->
         <g class="part-shadow">
           <rect class="breadboard" x="250" y="270" width="1260" height="390" rx="14"/>
+          <rect x="272" y="292" width="1216" height="346" rx="10" fill="none" stroke="#f7f7f7" stroke-width="5"/>
           <rect x="292" y="310" width="1176" height="48" fill="url(#holes)" opacity="0.9"/>
           <rect x="292" y="388" width="1176" height="120" fill="url(#holes)" opacity="0.9"/>
           <rect x="292" y="548" width="1176" height="58" fill="url(#holes)" opacity="0.9"/>
           <path d="M292 370H1468M292 520H1468" stroke="#d2d6de" stroke-width="2"/>
+          <rect x="292" y="510" width="1176" height="24" fill="#dfe3ea" opacity="0.9"/>
+          <path d="M292 522H1468" stroke="#c1c7d1" stroke-width="2"/>
           <path class="wire arduino bold" d="M312 326H1448"/>
           <path class="wire external bold" d="M312 342H1448"/>
           <path class="wire gnd bold" d="M312 358H1448"/>
+          <text class="rail-label" x="284" y="331" fill="var(--arduino-5v)">+</text>
+          <text class="rail-label" x="284" y="362" fill="var(--gnd)">-</text>
           <text class="rail-label" x="328" y="316">Arduino 5V</text>
           <text class="rail-label" x="472" y="316">Harici 5V</text>
           <text class="rail-label" x="616" y="316">Ortak GND</text>
+          <text class="small" x="330" y="386">1</text><text class="small" x="522" y="386">10</text>
+          <text class="small" x="762" y="386">20</text><text class="small" x="1002" y="386">30</text>
+          <text class="small" x="1242" y="386">40</text><text class="small" x="1432" y="386">50</text>
           <text class="small" x="270" y="430">A</text><text class="small" x="270" y="454">B</text>
           <text class="small" x="270" y="478">C</text><text class="small" x="270" y="502">D</text>
           <text class="small" x="1488" y="430">A</text><text class="small" x="1488" y="454">B</text>
@@ -270,13 +284,17 @@
         <!-- DHT22 -->
         <g class="part-shadow">
           <rect class="part-card" x="340" y="56" width="160" height="150"/>
-          <rect x="384" y="86" width="72" height="86" rx="6" fill="#f7fbff" stroke="#9fb4c8" stroke-width="2"/>
-          <rect x="395" y="101" width="50" height="56" rx="5" fill="#f0f6fb" stroke="#b4c5d4"/>
-          <circle cx="407" cy="115" r="3" fill="#a4b4c4"/><circle cx="421" cy="115" r="3" fill="#a4b4c4"/>
-          <circle cx="435" cy="115" r="3" fill="#a4b4c4"/><circle cx="407" cy="130" r="3" fill="#a4b4c4"/>
-          <circle cx="421" cy="130" r="3" fill="#a4b4c4"/><circle cx="435" cy="130" r="3" fill="#a4b4c4"/>
-          <text class="label" x="391" y="192">DHT22</text>
+          <rect x="375" y="82" width="90" height="98" rx="8" fill="#f9fbff" stroke="#8aa0b8" stroke-width="2"/>
+          <rect x="386" y="98" width="68" height="58" rx="5" fill="#edf4fb" stroke="#b9c8d6"/>
+          <path d="M399 100V154M414 100V154M429 100V154M444 100V154" stroke="#c5d2df" stroke-width="4"/>
+          <path d="M386 112H454M386 128H454M386 144H454" stroke="#c5d2df" stroke-width="4"/>
+          <circle cx="396" cy="166" r="3" fill="#8795a5"/><circle cx="410" cy="166" r="3" fill="#8795a5"/>
+          <circle cx="424" cy="166" r="3" fill="#8795a5"/><circle cx="438" cy="166" r="3" fill="#8795a5"/>
+          <text class="label" x="395" y="197">DHT22</text>
           <rect class="pin-block" x="358" y="214" width="124" height="22" rx="4"/>
+          <rect class="brass" x="372" y="204" width="12" height="14" rx="2"/>
+          <rect class="brass" x="414" y="204" width="12" height="14" rx="2"/>
+          <rect class="brass" x="456" y="204" width="12" height="14" rx="2"/>
           <circle class="pin-dot red" cx="378" cy="225" r="6"/><text class="small" x="361" y="254">VCC</text>
           <circle class="pin-dot blue" cx="420" cy="225" r="6"/><text class="small" x="404" y="254">DATA</text>
           <circle class="pin-dot black" cx="462" cy="225" r="6"/><text class="small" x="448" y="254">GND</text>
@@ -285,11 +303,16 @@
         <!-- Potentiometer -->
         <g class="part-shadow">
           <rect class="part-card" x="574" y="64" width="150" height="142"/>
-          <circle cx="649" cy="125" r="38" fill="#30343a"/>
-          <circle cx="649" cy="125" r="20" fill="#aab0b8"/>
-          <line x1="649" y1="125" x2="665" y2="111" stroke="#4f5660" stroke-width="4" stroke-linecap="round"/>
-          <text class="label" x="599" y="192">10 kΩ pot</text>
+          <circle cx="649" cy="124" r="45" fill="#1f242b" stroke="#101419" stroke-width="3"/>
+          <circle cx="649" cy="124" r="31" fill="#464d58" stroke="#171b20" stroke-width="2"/>
+          <circle cx="649" cy="124" r="17" fill="#c4c9d1" stroke="#818995" stroke-width="2"/>
+          <line x1="649" y1="124" x2="670" y2="106" stroke="#555e6a" stroke-width="5" stroke-linecap="round"/>
+          <text class="small" x="628" y="89">B10K</text>
+          <text class="label" x="596" y="192">B10K 10 kΩ</text>
           <rect class="pin-block" x="592" y="214" width="114" height="22" rx="4"/>
+          <rect class="brass" x="604" y="198" width="12" height="20" rx="2"/>
+          <rect class="brass" x="643" y="198" width="12" height="20" rx="2"/>
+          <rect class="brass" x="682" y="198" width="12" height="20" rx="2"/>
           <circle class="pin-dot red" cx="610" cy="225" r="6"/><text class="small" x="601" y="254">5V</text>
           <circle class="pin-dot switch-dot" cx="649" cy="225" r="6"/><text class="small" x="640" y="254">V0</text>
           <circle class="pin-dot black" cx="688" cy="225" r="6"/><text class="small" x="676" y="254">GND</text>
@@ -297,13 +320,27 @@
 
         <!-- LCD -->
         <g class="part-shadow">
-          <rect class="part-board" x="800" y="42" width="430" height="170" rx="8"/>
-          <rect x="850" y="78" width="330" height="82" rx="8" fill="#1a3e93" stroke="#09255a" stroke-width="3"/>
-          <rect x="870" y="96" width="290" height="44" rx="4" fill="#223fbb"/>
-          <text x="908" y="126" fill="#c8dcff" font-size="26" font-weight="700">LCD 1602A</text>
-          <circle cx="820" cy="62" r="8" fill="#e9eef5"/><circle cx="1210" cy="62" r="8" fill="#e9eef5"/>
-          <circle cx="820" cy="192" r="8" fill="#e9eef5"/><circle cx="1210" cy="192" r="8" fill="#e9eef5"/>
+          <rect x="800" y="42" width="430" height="170" rx="8" fill="#168754" stroke="#0e5737" stroke-width="2"/>
+          <circle class="metal" cx="820" cy="62" r="9"/><circle class="metal" cx="1210" cy="62" r="9"/>
+          <circle class="metal" cx="820" cy="192" r="9"/><circle class="metal" cx="1210" cy="192" r="9"/>
+          <rect x="840" y="72" width="350" height="96" rx="9" fill="#193985" stroke="#09255a" stroke-width="4"/>
+          <rect x="866" y="94" width="298" height="52" rx="5" fill="#2e36b7"/>
+          <path d="M882 104H1148M882 118H1148M882 132H1148" stroke="#5865d8" stroke-width="1" opacity="0.5"/>
+          <text x="902" y="128" fill="#d6e6ff" font-size="28" font-weight="700">LCD 1602A</text>
+          <text class="silk" x="840" y="188">16x2 CHARACTER LCD</text>
+          <rect x="805" y="174" width="92" height="16" rx="3" fill="#0e5737"/>
+          <circle class="brass" cx="814" cy="182" r="4"/><circle class="brass" cx="830" cy="182" r="4"/>
+          <circle class="brass" cx="846" cy="182" r="4"/><circle class="brass" cx="862" cy="182" r="4"/>
+          <circle class="brass" cx="878" cy="182" r="4"/>
           <rect class="pin-block" x="805" y="222" width="416" height="24" rx="4"/>
+          <g opacity="0.9">
+            <circle class="socket-hole" cx="824" cy="234" r="2.7"/><circle class="socket-hole" cx="856" cy="234" r="2.7"/>
+            <circle class="socket-hole" cx="888" cy="234" r="2.7"/><circle class="socket-hole" cx="920" cy="234" r="2.7"/>
+            <circle class="socket-hole" cx="952" cy="234" r="2.7"/><circle class="socket-hole" cx="984" cy="234" r="2.7"/>
+            <circle class="socket-hole" cx="1016" cy="234" r="2.7"/><circle class="socket-hole" cx="1048" cy="234" r="2.7"/>
+            <circle class="socket-hole" cx="1080" cy="234" r="2.7"/><circle class="socket-hole" cx="1112" cy="234" r="2.7"/>
+            <circle class="socket-hole" cx="1144" cy="234" r="2.7"/><circle class="socket-hole" cx="1176" cy="234" r="2.7"/>
+          </g>
           <circle class="pin-dot black" cx="824" cy="234" r="5"/><text class="small" x="811" y="264">VSS</text>
           <circle class="pin-dot red" cx="856" cy="234" r="5"/><text class="small" x="844" y="264">VDD</text>
           <circle class="pin-dot switch-dot" cx="888" cy="234" r="5"/><text class="small" x="882" y="264">V0</text>
@@ -320,12 +357,23 @@
 
         <!-- Joystick -->
         <g class="part-shadow">
-          <rect class="part-board" x="1338" y="58" width="180" height="160" rx="8"/>
-          <circle cx="1428" cy="130" r="48" fill="#22262d"/>
-          <circle cx="1428" cy="130" r="24" fill="#4b525c"/>
-          <circle cx="1428" cy="130" r="12" fill="#101317"/>
-          <text class="label" x="1367" y="201" fill="#fff">HW-504</text>
+          <rect x="1338" y="58" width="180" height="160" rx="8" fill="#121417" stroke="#050608" stroke-width="2"/>
+          <circle class="metal" cx="1358" cy="78" r="7"/><circle class="metal" cx="1498" cy="78" r="7"/>
+          <circle class="metal" cx="1358" cy="198" r="7"/><circle class="metal" cx="1498" cy="198" r="7"/>
+          <rect x="1362" y="82" width="42" height="28" rx="4" fill="#30353d"/>
+          <rect x="1452" y="82" width="42" height="28" rx="4" fill="#30353d"/>
+          <circle cx="1428" cy="132" r="56" fill="#0f1115" stroke="#050608" stroke-width="4"/>
+          <circle cx="1428" cy="132" r="39" fill="#242932"/>
+          <circle cx="1428" cy="132" r="24" fill="#4a525e"/>
+          <circle cx="1428" cy="132" r="12" fill="#101317"/>
+          <circle cx="1434" cy="126" r="5" fill="#2d333b"/>
+          <text x="1362" y="202" fill="#f3f4f6" font-size="11" font-weight="700">HW-504</text>
           <rect class="pin-block" x="1328" y="228" width="204" height="24" rx="4"/>
+          <g opacity="0.9">
+            <circle class="socket-hole" cx="1350" cy="240" r="2.7"/><circle class="socket-hole" cx="1390" cy="240" r="2.7"/>
+            <circle class="socket-hole" cx="1430" cy="240" r="2.7"/><circle class="socket-hole" cx="1470" cy="240" r="2.7"/>
+            <circle class="socket-hole" cx="1510" cy="240" r="2.7"/>
+          </g>
           <circle class="pin-dot black" cx="1350" cy="240" r="5"/><text class="small" x="1338" y="270">GND</text>
           <circle class="pin-dot red" cx="1390" cy="240" r="5"/><text class="small" x="1379" y="270">+5V</text>
           <circle class="pin-dot purple" cx="1430" cy="240" r="5"/><text class="small" x="1418" y="270">VRx</text>
@@ -335,16 +383,39 @@
 
         <!-- Arduino -->
         <g class="part-shadow">
-          <rect x="150" y="732" width="560" height="330" rx="16" fill="var(--arduino)" stroke="#15577d" stroke-width="3"/>
-          <rect x="188" y="782" width="116" height="70" rx="8" fill="#d8dde5"/>
-          <rect x="120" y="798" width="88" height="38" rx="6" fill="#c7ccd4"/>
+          <rect x="150" y="732" width="560" height="330" rx="16" fill="#2477a8" stroke="#135376" stroke-width="3"/>
+          <path d="M176 754H684M176 1040H684" stroke="#66abd0" stroke-width="2" opacity="0.65"/>
+          <rect class="metal" x="188" y="782" width="116" height="70" rx="8"/>
+          <rect class="metal" x="120" y="798" width="88" height="38" rx="6"/>
+          <rect x="178" y="950" width="92" height="74" rx="10" fill="#26313b" stroke="#14191f" stroke-width="3"/>
+          <circle cx="224" cy="987" r="25" fill="#151a20"/>
+          <rect x="318" y="938" width="86" height="44" rx="3" fill="#26313b" stroke="#12161b"/>
+          <circle cx="340" cy="960" r="9" fill="#101419"/><circle cx="382" cy="960" r="9" fill="#101419"/>
+          <rect class="metal" x="475" y="936" width="118" height="34" rx="17"/>
+          <text x="496" y="959" fill="#eef2f6" font-size="12" font-weight="700">16 MHz</text>
+          <rect x="500" y="858" width="126" height="42" rx="4" fill="#283038" stroke="#11161b" stroke-width="3"/>
+          <circle cx="520" cy="879" r="5" fill="#11161b"/><circle cx="606" cy="879" r="5" fill="#11161b"/>
+          <path d="M510 849H616M510 909H616" stroke="#d8dde5" stroke-width="5" stroke-dasharray="9 8"/>
+          <circle cx="338" cy="828" r="18" fill="#f0f2f5" stroke="#9ba4b2" stroke-width="3"/>
+          <circle cx="338" cy="828" r="9" fill="#bb3e28"/>
+          <text class="silk" x="318" y="808">RESET</text>
           <circle cx="632" cy="812" r="13" fill="#e9eef5" stroke="#c0a853" stroke-width="3"/>
           <circle cx="632" cy="1010" r="13" fill="#e9eef5" stroke="#c0a853" stroke-width="3"/>
           <circle cx="210" cy="1010" r="13" fill="#e9eef5" stroke="#c0a853" stroke-width="3"/>
-          <text x="356" y="884" fill="#fff" font-size="40" font-weight="700">ARDUINO</text>
-          <text x="418" y="930" fill="#fff" font-size="28" font-weight="700">UNO / NANO</text>
+          <text x="304" y="922" fill="#fff" font-size="38" font-weight="700">ARDUINO</text>
+          <text x="380" y="966" fill="#fff" font-size="26" font-weight="700">UNO R3</text>
           <rect class="pin-block" x="350" y="744" width="330" height="34" rx="5"/>
           <rect class="pin-block" x="360" y="1018" width="210" height="28" rx="5"/>
+          <g opacity="0.95">
+            <circle class="socket-hole" cx="376" cy="762" r="3"/><circle class="socket-hole" cx="400" cy="762" r="3"/>
+            <circle class="socket-hole" cx="424" cy="762" r="3"/><circle class="socket-hole" cx="448" cy="762" r="3"/>
+            <circle class="socket-hole" cx="472" cy="762" r="3"/><circle class="socket-hole" cx="496" cy="762" r="3"/>
+            <circle class="socket-hole" cx="528" cy="762" r="3"/><circle class="socket-hole" cx="552" cy="762" r="3"/>
+            <circle class="socket-hole" cx="576" cy="762" r="3"/><circle class="socket-hole" cx="604" cy="762" r="3"/>
+            <circle class="socket-hole" cx="634" cy="762" r="3"/><circle class="socket-hole" cx="660" cy="762" r="3"/>
+            <circle class="socket-hole" cx="398" cy="1032" r="3"/><circle class="socket-hole" cx="436" cy="1032" r="3"/>
+            <circle class="socket-hole" cx="512" cy="1032" r="3"/><circle class="socket-hole" cx="550" cy="1032" r="3"/>
+          </g>
           <text class="tiny" x="372" y="800">D2</text><text class="tiny" x="396" y="800">D3</text>
           <text class="tiny" x="420" y="800">D4</text><text class="tiny" x="444" y="800">D5</text>
           <text class="tiny" x="468" y="800">D6</text><text class="tiny" x="492" y="800">D7</text>
@@ -373,9 +444,13 @@
 
         <!-- 9V battery -->
         <g class="part-shadow">
-          <rect x="760" y="780" width="130" height="95" rx="12" fill="#303236"/>
+          <rect x="760" y="780" width="130" height="95" rx="12" fill="#303236" stroke="#16191d" stroke-width="3"/>
+          <rect x="770" y="790" width="110" height="30" rx="7" fill="#23272d"/>
           <rect x="750" y="802" width="12" height="50" rx="4" fill="#c8c8c8"/>
-          <circle cx="792" cy="812" r="10" fill="#cfcfcf"/><circle cx="858" cy="812" r="10" fill="#cfcfcf"/>
+          <circle class="metal" cx="792" cy="812" r="10"/><circle class="metal" cx="858" cy="812" r="10"/>
+          <circle cx="792" cy="812" r="5" fill="#a5adb7"/><circle cx="858" cy="812" r="5" fill="#a5adb7"/>
+          <rect x="777" y="790" width="30" height="44" rx="4" fill="none" stroke="#555b64"/>
+          <rect x="843" y="790" width="30" height="44" rx="4" fill="none" stroke="#555b64"/>
           <text x="794" y="847" fill="#fff" font-size="24" font-weight="700">9V</text>
           <text x="786" y="866" fill="#d7d7d7" font-size="12">pil girişi</text>
           <text class="small" x="782" y="770">+9V</text><text class="small" x="848" y="770">GND</text>
@@ -383,11 +458,23 @@
 
         <!-- LM2596 -->
         <g class="part-shadow">
-          <rect class="part-board" x="950" y="748" width="230" height="150" rx="8"/>
-          <rect x="995" y="772" width="58" height="38" rx="4" fill="#d8dde5"/>
-          <circle cx="1118" cy="792" r="25" fill="#2d333b"/>
-          <rect x="1070" y="835" width="76" height="18" rx="5" fill="#b9c0ca"/>
-          <text x="1000" y="880" fill="#fff" font-size="22" font-weight="700">LM2596</text>
+          <rect x="950" y="748" width="230" height="150" rx="8" fill="#136fba" stroke="#0b4779" stroke-width="2"/>
+          <circle class="metal" cx="970" cy="768" r="7"/><circle class="metal" cx="1160" cy="768" r="7"/>
+          <circle class="metal" cx="970" cy="878" r="7"/><circle class="metal" cx="1160" cy="878" r="7"/>
+          <rect class="terminal" x="966" y="786" width="42" height="60" rx="5"/>
+          <circle class="terminal-hole" cx="987" cy="805" r="9"/><circle class="terminal-hole" cx="987" cy="828" r="9"/>
+          <rect class="terminal" x="1130" y="786" width="42" height="60" rx="5"/>
+          <circle class="terminal-hole" cx="1151" cy="805" r="9"/><circle class="terminal-hole" cx="1151" cy="828" r="9"/>
+          <rect x="1016" y="770" width="52" height="34" rx="4" fill="#d8dde5" stroke="#98a2b1"/>
+          <path d="M1026 786H1058" stroke="#9aa3af" stroke-width="4"/>
+          <circle cx="1110" cy="792" r="27" fill="#2d333b"/>
+          <circle cx="1110" cy="792" r="17" fill="#3f4854"/>
+          <path d="M1095 779Q1110 790 1125 779M1095 792Q1110 803 1125 792M1095 805Q1110 816 1125 805" stroke="#9ba3ae" stroke-width="3" fill="none"/>
+          <rect x="1068" y="834" width="78" height="20" rx="5" fill="#b9c0ca" stroke="#858e99"/>
+          <circle cx="1084" cy="844" r="5" fill="#777f8c"/><circle cx="1130" cy="844" r="5" fill="#777f8c"/>
+          <rect x="1032" y="822" width="28" height="12" rx="2" fill="#161b21"/>
+          <rect x="1088" y="862" width="48" height="12" rx="3" fill="#e4d56b" stroke="#9f9334"/>
+          <text x="986" y="880" fill="#fff" font-size="22" font-weight="700">LM2596 5V</text>
           <rect class="pin-block" x="924" y="790" width="38" height="64" rx="4"/>
           <rect class="pin-block" x="1170" y="790" width="38" height="64" rx="4"/>
           <circle class="pin-dot brown" cx="943" cy="810" r="5"/><text class="small" x="904" y="814">IN+</text>
@@ -398,9 +485,23 @@
 
         <!-- ULN2003 + motor -->
         <g class="part-shadow">
-          <rect class="part-board" x="1320" y="738" width="210" height="170" rx="8"/>
+          <rect x="1320" y="738" width="210" height="170" rx="8" fill="#1e76ad" stroke="#0e4f79" stroke-width="2"/>
+          <circle class="metal" cx="1340" cy="758" r="7"/><circle class="metal" cx="1510" cy="758" r="7"/>
+          <circle class="metal" cx="1340" cy="888" r="7"/><circle class="metal" cx="1510" cy="888" r="7"/>
           <rect x="1374" y="780" width="96" height="72" rx="4" fill="#20262e"/>
-          <text x="1374" y="877" fill="#fff" font-size="20" font-weight="700">ULN2003</text>
+          <path d="M1384 774H1460M1384 858H1460" stroke="#d8dde5" stroke-width="4" stroke-dasharray="7 7"/>
+          <g>
+            <circle cx="1348" cy="792" r="7" fill="#d21f2f"/><circle cx="1348" cy="818" r="7" fill="#d21f2f"/>
+            <circle cx="1348" cy="844" r="7" fill="#d21f2f"/><circle cx="1348" cy="870" r="7" fill="#d21f2f"/>
+            <rect x="1360" y="786" width="30" height="8" rx="4" fill="#c7ab3a"/>
+            <rect x="1360" y="812" width="30" height="8" rx="4" fill="#c7ab3a"/>
+            <rect x="1360" y="838" width="30" height="8" rx="4" fill="#c7ab3a"/>
+            <rect x="1360" y="864" width="30" height="8" rx="4" fill="#c7ab3a"/>
+          </g>
+          <rect x="1468" y="792" width="42" height="34" rx="4" fill="#e8edf4" stroke="#8d98a8"/>
+          <circle class="socket-hole" cx="1478" cy="809" r="3"/><circle class="socket-hole" cx="1488" cy="809" r="3"/>
+          <circle class="socket-hole" cx="1498" cy="809" r="3"/>
+          <text x="1370" y="766" fill="#fff" font-size="18" font-weight="700">ULN2003A</text>
           <rect class="pin-block" x="1286" y="770" width="46" height="112" rx="4"/>
           <circle class="pin-dot blue" cx="1310" cy="790" r="5"/><text class="small" x="1258" y="794">IN1</text>
           <circle class="pin-dot blue" cx="1310" cy="816" r="5"/><text class="small" x="1258" y="820">IN2</text>
@@ -409,9 +510,12 @@
           <rect class="pin-block" x="1518" y="786" width="38" height="64" rx="4"/>
           <circle class="pin-dot orange" cx="1537" cy="806" r="5"/><text class="small" x="1564" y="810">+</text>
           <circle class="pin-dot black" cx="1537" cy="832" r="5"/><text class="small" x="1564" y="836">-</text>
-          <circle cx="1618" cy="818" r="72" fill="#1f2329" stroke="#11151a" stroke-width="4"/>
-          <circle cx="1618" cy="818" r="28" fill="#a7b7c9"/>
-          <circle cx="1618" cy="818" r="10" fill="#30343a"/>
+          <circle cx="1618" cy="818" r="76" fill="#d5d9df" stroke="#8f98a4" stroke-width="4"/>
+          <circle cx="1618" cy="818" r="62" fill="#c6ccd4"/>
+          <path d="M1618 756V880M1556 818H1680M1575 775L1661 861M1661 775L1575 861" stroke="#aeb5bf" stroke-width="10" opacity="0.75"/>
+          <circle cx="1618" cy="818" r="30" fill="#f0f3f7" stroke="#8a95a3" stroke-width="4"/>
+          <circle cx="1618" cy="818" r="10" fill="#323842"/>
+          <path d="M1537 806H1566M1537 832H1566" stroke="#f8d36a" stroke-width="3"/>
           <text class="label" x="1564" y="920">28BYJ-48</text>
         </g>
 
@@ -469,7 +573,7 @@
         <path class="wire signal thin" d="M1310 842H576V762"/>
         <path class="wire signal thin" d="M1310 868H604V762"/>
         <rect class="label-bg" x="780" y="774" width="246" height="24"/>
-        <text class="label" x="790" y="791">ULN2003 IN1-IN4 → Arduino D8-D11</text>
+        <text class="label" x="790" y="791">ULN2003A IN1-IN4 → Arduino D8-D11</text>
 
         <path class="wire signal thin" d="M1556 818H1586"/>
         <text class="small" x="1518" y="886">Motor soketi kart üzerinde</text>
@@ -495,7 +599,7 @@
       <section>
         <h2>Motor ve Sürücü</h2>
         <table>
-          <thead><tr><th>ULN2003</th><th>Arduino / hat</th><th>Birim</th></tr></thead>
+          <thead><tr><th>ULN2003A</th><th>Arduino / hat</th><th>Birim</th></tr></thead>
           <tbody>
             <tr><td><code>IN1</code></td><td><code>D8</code></td><td>Dijital sinyal</td></tr>
             <tr><td><code>IN2</code></td><td><code>D9</code></td><td>Dijital sinyal</td></tr>
@@ -508,17 +612,17 @@
       </section>
 
       <section>
-        <h2>Sensör ve Joystick</h2>
+        <h2>DHT22 ve HW-504</h2>
         <table>
           <thead><tr><th>Birim / pin</th><th>Bağlantı</th><th>Birim</th></tr></thead>
           <tbody>
             <tr><td>DHT22 <code>VCC</code></td><td>Arduino 5V rayı</td><td>5V DC</td></tr>
             <tr><td>DHT22 <code>DATA</code></td><td><code>D2</code></td><td>Dijital veri</td></tr>
             <tr><td>DHT22 <code>GND</code></td><td>Ortak GND rayı</td><td>0V</td></tr>
-            <tr><td>Joystick <code>+5V</code></td><td>Arduino 5V rayı</td><td>5V DC</td></tr>
-            <tr><td>Joystick <code>VRx</code></td><td><code>A0</code></td><td>Analog sinyal</td></tr>
-            <tr><td>Joystick <code>VRy</code></td><td><code>A1</code></td><td>Analog sinyal</td></tr>
-            <tr><td>Joystick <code>SW</code></td><td><code>D3</code></td><td><code>INPUT_PULLUP</code></td></tr>
+            <tr><td>HW-504 <code>+5V</code></td><td>Arduino 5V rayı</td><td>5V DC</td></tr>
+            <tr><td>HW-504 <code>VRx</code></td><td><code>A0</code></td><td>Analog sinyal</td></tr>
+            <tr><td>HW-504 <code>VRy</code></td><td><code>A1</code></td><td>Analog sinyal</td></tr>
+            <tr><td>HW-504 <code>SW</code></td><td><code>D3</code></td><td><code>INPUT_PULLUP</code></td></tr>
           </tbody>
         </table>
       </section>
@@ -541,8 +645,7 @@
     </div>
 
     <p class="footnote">
-      Kaynak yaklaşımı: Fritzing/Tinkercad benzeri breadboard görünümü referans alınarak özgün sembolik SVG çizildi; kullanıcı fotoğrafları ve ürün görselleri kullanılmadı.
-      Arduino fiziksel kartın Nano ise aynı isimli pinleri Nano üzerindeki karşılıklarına bağla.
+      Şemada Arduino Uno R3 formu kullanıldı; Nano kullanıyorsan aynı isimli pinleri Nano üzerindeki karşılıklarına bağla.
     </p>
   </main>
 </body>
