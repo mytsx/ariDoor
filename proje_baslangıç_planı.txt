@@ -1,0 +1,27 @@
+Proje Adı
+
+İklime Duyarlı Mini Akıllı Kovan Maketi
+
+Proje Türü
+
+Tasarım
+
+Proje Alanı
+
+Teknoloji ve Tasarım / STEM
+
+Tematik Alt Alan
+
+STEAM
+
+AMAÇ (31 kelime)
+
+Bu projede küçük bütçeyle, sıcaklık ve neme göre tepki verebilen, arılara zarar vermeyecek bir “mini akıllı kovan” sistemi tasarlayacağım. Basit sensörlerle havalandırmayı otomatik yönetecek, kış ve yazda yaşam koşullarını iyileştirmeyi hedefleyeceğim.
+
+YÖNTEM (86 kelime)
+
+Önce küçük bir ahşap kovan maketi hazırlayacağım. İçine uygun bir sıcaklık-nem sensörü yerleştireceğim. Sensörü Arduino Nano’ya bağlayacağım ve ısı ile neme göre eşik değerleri kodlayacağım. Mini servo, uçuş deliği kapağını yavaşça açıp kapatacak. Ölçümleri iki satırlı bir LCD ekranda göstereceğim. Devreyi pilli kutuyla besleyeceğim, kabloları yalıtacağım. Maketi arı kullanmadan test edeceğim; sıcak su torbası ve buz aküsüyle farklı sıcaklıklar oluşturup sistemin tepkisini gözlemleyeceğim. Bütçeyi düşürmek için geri dönüştürülmüş ahşap ve karton parçalar kullanacağım.
+
+SONUÇ (61 kelime)
+
+Proje bittiğinde sistemi güvenle çalıştırabilecek ve sensör verilerinin kararları nasıl etkilediğini anlayacağım. Küçük bütçeyle işleyen bir otomasyonun arı sağlığına katkısını göstereceğim. Gerçek kovanlarda deney yapmayacağım; canlıya zarar riski olmayacak. Maketi öğretmenimin izniyle sınıfta sergileyeceğim, arkadaşlarıma çalışma prensibini anlatacağım. Gelecekte aynı mantıkla güneş paneli desteği ve gerçek kovan aparatı tasarlamayı planlayacağım.
