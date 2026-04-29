@@ -1,5 +1,7 @@
 # ariDoor - Pin Bağlantıları
 
+Görsel bağlantı şeması: [`tinkercad-baglanti-semasi.html`](tinkercad-baglanti-semasi.html)
+
 ## Güç Hattı
 
 İki ayrı güç hattı var. Sebebi: step motorun bobin kapanma/açılması Arduino'nun 5V hattında voltaj sıçramaları (inductive kickback) üretip DHT22'yi yakıyordu. Motor ve LCD arka ışığı ayrı bir hatta alındı.

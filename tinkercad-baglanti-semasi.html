@@ -1,0 +1,549 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ariDoor - Tinkercad Mantığı Bağlantı Şeması</title>
+  <style>
+    :root {
+      --bg: #f3f4f6;
+      --panel: #ffffff;
+      --ink: #20242c;
+      --muted: #5f6775;
+      --line: #d8dde6;
+      --board: #ececec;
+      --hole: #31363e;
+      --arduino: #2d79aa;
+      --arduino-5v: #e51c2e;
+      --external-5v: #f08a24;
+      --battery-9v: #8b3a1f;
+      --gnd: #252b33;
+      --signal: #3155e7;
+      --lcd-signal: #168b5f;
+      --analog: #7b3fe4;
+      --switch: #b64b1f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Arial, Helvetica, sans-serif;
+      line-height: 1.45;
+    }
+
+    main {
+      width: min(1720px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 24px 0 42px;
+    }
+
+    header {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(24px, 3vw, 38px);
+      letter-spacing: 0;
+    }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 1120px;
+    }
+
+    .warning {
+      display: grid;
+      gap: 6px;
+      margin: 14px 0;
+      padding: 13px 15px;
+      background: #fff8e6;
+      border: 1px solid #f2c15c;
+      border-radius: 8px;
+      color: #4f3900;
+      max-width: 1120px;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 14px 0 18px;
+    }
+
+    .legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 32px;
+      padding: 6px 10px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      color: var(--ink);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .swatch {
+      width: 28px;
+      height: 4px;
+      border-radius: 99px;
+      background: currentColor;
+    }
+
+    .schematic-wrap {
+      overflow: auto;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: 0 14px 34px rgba(31, 41, 55, 0.10);
+    }
+
+    svg {
+      display: block;
+      width: 100%;
+      min-width: 1360px;
+      height: auto;
+      background: #f8f9fb;
+    }
+
+    .wire {
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-width: 5;
+    }
+
+    .wire.thin { stroke-width: 3.5; }
+    .wire.bold { stroke-width: 7; }
+    .wire.arduino { stroke: var(--arduino-5v); }
+    .wire.external { stroke: var(--external-5v); }
+    .wire.battery { stroke: var(--battery-9v); }
+    .wire.gnd { stroke: var(--gnd); }
+    .wire.signal { stroke: var(--signal); }
+    .wire.lcd { stroke: var(--lcd-signal); }
+    .wire.analog { stroke: var(--analog); }
+    .wire.switch { stroke: var(--switch); }
+
+    .part-shadow { filter: drop-shadow(0 8px 12px rgba(31, 41, 55, 0.16)); }
+    .part-board { fill: #0f5f93; stroke: #0a3e63; stroke-width: 2; }
+    .part-card { fill: #fff; stroke: #cfd6e1; stroke-width: 2; rx: 8; }
+    .breadboard { fill: var(--board); stroke: #c9ced8; stroke-width: 2; }
+    .hole { fill: var(--hole); opacity: 0.62; }
+    .hole-light { fill: #fff; opacity: 0.82; }
+    .pin-block { fill: #1e242c; stroke: #06080a; stroke-width: 1; }
+    .pin-socket { fill: #40464f; stroke: #111820; stroke-width: 1; }
+    .pin-dot { fill: #fff; stroke-width: 3; }
+    .red { stroke: var(--arduino-5v); }
+    .orange { stroke: var(--external-5v); }
+    .brown { stroke: var(--battery-9v); }
+    .black { stroke: var(--gnd); }
+    .blue { stroke: var(--signal); }
+    .green { stroke: var(--lcd-signal); }
+    .purple { stroke: var(--analog); }
+    .switch-dot { stroke: var(--switch); }
+    .label-bg { fill: rgba(255, 255, 255, 0.9); stroke: #d8dde6; stroke-width: 1; rx: 5; }
+    .title { fill: var(--ink); font-size: 20px; font-weight: 700; letter-spacing: 0; }
+    .label { fill: var(--ink); font-size: 13px; font-weight: 700; letter-spacing: 0; }
+    .small { fill: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: 0; }
+    .tiny { fill: #eef7ff; font-size: 10px; font-weight: 700; letter-spacing: 0; }
+    .rail-label { fill: var(--ink); font-size: 14px; font-weight: 700; }
+
+    .tables {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    section {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th, td {
+      padding: 8px 6px;
+      border-bottom: 1px solid #edf0f4;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    code {
+      background: #eef2f7;
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.94em;
+    }
+
+    .footnote {
+      margin-top: 16px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>ariDoor Tinkercad mantığı bağlantı şeması</h1>
+      <p>
+        Gerçek ürün fotoğrafları yerine Tinkercad/Fritzing breadboard görünümüne benzeyen sembolik parçalar kullanıldı.
+        Amaç fiziksel ölçekten çok hangi pinin hangi hatta gittiğini temiz göstermek.
+      </p>
+    </header>
+
+    <div class="warning">
+      <strong>Güç ayrımı</strong>
+      <span>Arduino 5V hassas hattı ve regülatörden gelen harici 5V artı hattı birbirine bağlanmaz.</span>
+      <span>Ortak olan tek hat GND'dir: Arduino GND, regülatör OUT-, ULN2003 -, LCD VSS/K/RW, DHT22 GND ve joystick GND aynı 0V referansı kullanır.</span>
+    </div>
+
+    <div class="legend" aria-label="Kablo renkleri">
+      <span style="color: var(--arduino-5v)"><i class="swatch"></i>Arduino 5V hassas hat</span>
+      <span style="color: var(--external-5v)"><i class="swatch"></i>Regülatör çıkışı 5V</span>
+      <span style="color: var(--battery-9v)"><i class="swatch"></i>9V pil girişi</span>
+      <span style="color: var(--gnd)"><i class="swatch"></i>Ortak GND / 0V</span>
+      <span style="color: var(--signal)"><i class="swatch"></i>Dijital sinyal</span>
+      <span style="color: var(--lcd-signal)"><i class="swatch"></i>LCD veri</span>
+      <span style="color: var(--analog)"><i class="swatch"></i>Analog joystick</span>
+    </div>
+
+    <div class="schematic-wrap">
+      <svg viewBox="0 0 1760 1120" role="img" aria-label="ariDoor Tinkercad tarzı sembolik bağlantı şeması">
+        <defs>
+          <pattern id="holes" width="24" height="24" patternUnits="userSpaceOnUse">
+            <circle class="hole-light" cx="12" cy="12" r="6"/>
+            <circle class="hole" cx="12" cy="12" r="3.2"/>
+          </pattern>
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M40 0H0V40" fill="none" stroke="#e5e9ef" stroke-width="1"/>
+          </pattern>
+        </defs>
+
+        <rect width="1760" height="1120" fill="url(#grid)"/>
+
+        <!-- Breadboard -->
+        <g class="part-shadow">
+          <rect class="breadboard" x="250" y="270" width="1260" height="390" rx="14"/>
+          <rect x="292" y="310" width="1176" height="48" fill="url(#holes)" opacity="0.9"/>
+          <rect x="292" y="388" width="1176" height="120" fill="url(#holes)" opacity="0.9"/>
+          <rect x="292" y="548" width="1176" height="58" fill="url(#holes)" opacity="0.9"/>
+          <path d="M292 370H1468M292 520H1468" stroke="#d2d6de" stroke-width="2"/>
+          <path class="wire arduino bold" d="M312 326H1448"/>
+          <path class="wire external bold" d="M312 342H1448"/>
+          <path class="wire gnd bold" d="M312 358H1448"/>
+          <text class="rail-label" x="328" y="316">Arduino 5V</text>
+          <text class="rail-label" x="472" y="316">Harici 5V</text>
+          <text class="rail-label" x="616" y="316">Ortak GND</text>
+          <text class="small" x="270" y="430">A</text><text class="small" x="270" y="454">B</text>
+          <text class="small" x="270" y="478">C</text><text class="small" x="270" y="502">D</text>
+          <text class="small" x="1488" y="430">A</text><text class="small" x="1488" y="454">B</text>
+          <text class="small" x="1488" y="478">C</text><text class="small" x="1488" y="502">D</text>
+        </g>
+
+        <!-- DHT22 -->
+        <g class="part-shadow">
+          <rect class="part-card" x="340" y="56" width="160" height="150"/>
+          <rect x="384" y="86" width="72" height="86" rx="6" fill="#f7fbff" stroke="#9fb4c8" stroke-width="2"/>
+          <rect x="395" y="101" width="50" height="56" rx="5" fill="#f0f6fb" stroke="#b4c5d4"/>
+          <circle cx="407" cy="115" r="3" fill="#a4b4c4"/><circle cx="421" cy="115" r="3" fill="#a4b4c4"/>
+          <circle cx="435" cy="115" r="3" fill="#a4b4c4"/><circle cx="407" cy="130" r="3" fill="#a4b4c4"/>
+          <circle cx="421" cy="130" r="3" fill="#a4b4c4"/><circle cx="435" cy="130" r="3" fill="#a4b4c4"/>
+          <text class="label" x="391" y="192">DHT22</text>
+          <rect class="pin-block" x="358" y="214" width="124" height="22" rx="4"/>
+          <circle class="pin-dot red" cx="378" cy="225" r="6"/><text class="small" x="361" y="254">VCC</text>
+          <circle class="pin-dot blue" cx="420" cy="225" r="6"/><text class="small" x="404" y="254">DATA</text>
+          <circle class="pin-dot black" cx="462" cy="225" r="6"/><text class="small" x="448" y="254">GND</text>
+        </g>
+
+        <!-- Potentiometer -->
+        <g class="part-shadow">
+          <rect class="part-card" x="574" y="64" width="150" height="142"/>
+          <circle cx="649" cy="125" r="38" fill="#30343a"/>
+          <circle cx="649" cy="125" r="20" fill="#aab0b8"/>
+          <line x1="649" y1="125" x2="665" y2="111" stroke="#4f5660" stroke-width="4" stroke-linecap="round"/>
+          <text class="label" x="599" y="192">10 kΩ pot</text>
+          <rect class="pin-block" x="592" y="214" width="114" height="22" rx="4"/>
+          <circle class="pin-dot red" cx="610" cy="225" r="6"/><text class="small" x="601" y="254">5V</text>
+          <circle class="pin-dot switch-dot" cx="649" cy="225" r="6"/><text class="small" x="640" y="254">V0</text>
+          <circle class="pin-dot black" cx="688" cy="225" r="6"/><text class="small" x="676" y="254">GND</text>
+        </g>
+
+        <!-- LCD -->
+        <g class="part-shadow">
+          <rect class="part-board" x="800" y="42" width="430" height="170" rx="8"/>
+          <rect x="850" y="78" width="330" height="82" rx="8" fill="#1a3e93" stroke="#09255a" stroke-width="3"/>
+          <rect x="870" y="96" width="290" height="44" rx="4" fill="#223fbb"/>
+          <text x="908" y="126" fill="#c8dcff" font-size="26" font-weight="700">LCD 1602A</text>
+          <circle cx="820" cy="62" r="8" fill="#e9eef5"/><circle cx="1210" cy="62" r="8" fill="#e9eef5"/>
+          <circle cx="820" cy="192" r="8" fill="#e9eef5"/><circle cx="1210" cy="192" r="8" fill="#e9eef5"/>
+          <rect class="pin-block" x="805" y="222" width="416" height="24" rx="4"/>
+          <circle class="pin-dot black" cx="824" cy="234" r="5"/><text class="small" x="811" y="264">VSS</text>
+          <circle class="pin-dot red" cx="856" cy="234" r="5"/><text class="small" x="844" y="264">VDD</text>
+          <circle class="pin-dot switch-dot" cx="888" cy="234" r="5"/><text class="small" x="882" y="264">V0</text>
+          <circle class="pin-dot green" cx="920" cy="234" r="5"/><text class="small" x="914" y="264">RS</text>
+          <circle class="pin-dot black" cx="952" cy="234" r="5"/><text class="small" x="944" y="264">RW</text>
+          <circle class="pin-dot green" cx="984" cy="234" r="5"/><text class="small" x="979" y="264">E</text>
+          <circle class="pin-dot green" cx="1016" cy="234" r="5"/><text class="small" x="1008" y="264">D4</text>
+          <circle class="pin-dot green" cx="1048" cy="234" r="5"/><text class="small" x="1040" y="264">D5</text>
+          <circle class="pin-dot green" cx="1080" cy="234" r="5"/><text class="small" x="1072" y="264">D6</text>
+          <circle class="pin-dot green" cx="1112" cy="234" r="5"/><text class="small" x="1104" y="264">D7</text>
+          <circle class="pin-dot orange" cx="1144" cy="234" r="5"/><text class="small" x="1139" y="264">A</text>
+          <circle class="pin-dot black" cx="1176" cy="234" r="5"/><text class="small" x="1171" y="264">K</text>
+        </g>
+
+        <!-- Joystick -->
+        <g class="part-shadow">
+          <rect class="part-board" x="1338" y="58" width="180" height="160" rx="8"/>
+          <circle cx="1428" cy="130" r="48" fill="#22262d"/>
+          <circle cx="1428" cy="130" r="24" fill="#4b525c"/>
+          <circle cx="1428" cy="130" r="12" fill="#101317"/>
+          <text class="label" x="1367" y="201" fill="#fff">HW-504</text>
+          <rect class="pin-block" x="1328" y="228" width="204" height="24" rx="4"/>
+          <circle class="pin-dot black" cx="1350" cy="240" r="5"/><text class="small" x="1338" y="270">GND</text>
+          <circle class="pin-dot red" cx="1390" cy="240" r="5"/><text class="small" x="1379" y="270">+5V</text>
+          <circle class="pin-dot purple" cx="1430" cy="240" r="5"/><text class="small" x="1418" y="270">VRx</text>
+          <circle class="pin-dot purple" cx="1470" cy="240" r="5"/><text class="small" x="1458" y="270">VRy</text>
+          <circle class="pin-dot switch-dot" cx="1510" cy="240" r="5"/><text class="small" x="1503" y="270">SW</text>
+        </g>
+
+        <!-- Arduino -->
+        <g class="part-shadow">
+          <rect x="150" y="732" width="560" height="330" rx="16" fill="var(--arduino)" stroke="#15577d" stroke-width="3"/>
+          <rect x="188" y="782" width="116" height="70" rx="8" fill="#d8dde5"/>
+          <rect x="120" y="798" width="88" height="38" rx="6" fill="#c7ccd4"/>
+          <circle cx="632" cy="812" r="13" fill="#e9eef5" stroke="#c0a853" stroke-width="3"/>
+          <circle cx="632" cy="1010" r="13" fill="#e9eef5" stroke="#c0a853" stroke-width="3"/>
+          <circle cx="210" cy="1010" r="13" fill="#e9eef5" stroke="#c0a853" stroke-width="3"/>
+          <text x="356" y="884" fill="#fff" font-size="40" font-weight="700">ARDUINO</text>
+          <text x="418" y="930" fill="#fff" font-size="28" font-weight="700">UNO / NANO</text>
+          <rect class="pin-block" x="350" y="744" width="330" height="34" rx="5"/>
+          <rect class="pin-block" x="360" y="1018" width="210" height="28" rx="5"/>
+          <text class="tiny" x="372" y="800">D2</text><text class="tiny" x="396" y="800">D3</text>
+          <text class="tiny" x="420" y="800">D4</text><text class="tiny" x="444" y="800">D5</text>
+          <text class="tiny" x="468" y="800">D6</text><text class="tiny" x="492" y="800">D7</text>
+          <text class="tiny" x="524" y="800">D8</text><text class="tiny" x="548" y="800">D9</text>
+          <text class="tiny" x="568" y="800">D10</text><text class="tiny" x="596" y="800">D11</text>
+          <text class="tiny" x="626" y="800">D12</text><text class="tiny" x="654" y="800">D13</text>
+          <text class="tiny" x="386" y="1008">5V</text><text class="tiny" x="422" y="1008">GND</text>
+          <text class="tiny" x="496" y="1008">A0</text><text class="tiny" x="534" y="1008">A1</text>
+          <circle class="pin-dot blue" cx="376" cy="762" r="6"/>
+          <circle class="pin-dot switch-dot" cx="400" cy="762" r="6"/>
+          <circle class="pin-dot green" cx="424" cy="762" r="6"/>
+          <circle class="pin-dot green" cx="448" cy="762" r="6"/>
+          <circle class="pin-dot green" cx="472" cy="762" r="6"/>
+          <circle class="pin-dot green" cx="496" cy="762" r="6"/>
+          <circle class="pin-dot blue" cx="528" cy="762" r="6"/>
+          <circle class="pin-dot blue" cx="552" cy="762" r="6"/>
+          <circle class="pin-dot blue" cx="576" cy="762" r="6"/>
+          <circle class="pin-dot blue" cx="604" cy="762" r="6"/>
+          <circle class="pin-dot green" cx="634" cy="762" r="6"/>
+          <circle class="pin-dot green" cx="660" cy="762" r="6"/>
+          <circle class="pin-dot red" cx="398" cy="1032" r="6"/>
+          <circle class="pin-dot black" cx="436" cy="1032" r="6"/>
+          <circle class="pin-dot purple" cx="512" cy="1032" r="6"/>
+          <circle class="pin-dot purple" cx="550" cy="1032" r="6"/>
+        </g>
+
+        <!-- 9V battery -->
+        <g class="part-shadow">
+          <rect x="760" y="780" width="130" height="95" rx="12" fill="#303236"/>
+          <rect x="750" y="802" width="12" height="50" rx="4" fill="#c8c8c8"/>
+          <circle cx="792" cy="812" r="10" fill="#cfcfcf"/><circle cx="858" cy="812" r="10" fill="#cfcfcf"/>
+          <text x="794" y="847" fill="#fff" font-size="24" font-weight="700">9V</text>
+          <text x="786" y="866" fill="#d7d7d7" font-size="12">pil girişi</text>
+          <text class="small" x="782" y="770">+9V</text><text class="small" x="848" y="770">GND</text>
+        </g>
+
+        <!-- LM2596 -->
+        <g class="part-shadow">
+          <rect class="part-board" x="950" y="748" width="230" height="150" rx="8"/>
+          <rect x="995" y="772" width="58" height="38" rx="4" fill="#d8dde5"/>
+          <circle cx="1118" cy="792" r="25" fill="#2d333b"/>
+          <rect x="1070" y="835" width="76" height="18" rx="5" fill="#b9c0ca"/>
+          <text x="1000" y="880" fill="#fff" font-size="22" font-weight="700">LM2596</text>
+          <rect class="pin-block" x="924" y="790" width="38" height="64" rx="4"/>
+          <rect class="pin-block" x="1170" y="790" width="38" height="64" rx="4"/>
+          <circle class="pin-dot brown" cx="943" cy="810" r="5"/><text class="small" x="904" y="814">IN+</text>
+          <circle class="pin-dot black" cx="943" cy="836" r="5"/><text class="small" x="904" y="840">IN-</text>
+          <circle class="pin-dot orange" cx="1189" cy="810" r="5"/><text class="small" x="1214" y="814">OUT+</text>
+          <circle class="pin-dot black" cx="1189" cy="836" r="5"/><text class="small" x="1214" y="840">OUT-</text>
+        </g>
+
+        <!-- ULN2003 + motor -->
+        <g class="part-shadow">
+          <rect class="part-board" x="1320" y="738" width="210" height="170" rx="8"/>
+          <rect x="1374" y="780" width="96" height="72" rx="4" fill="#20262e"/>
+          <text x="1374" y="877" fill="#fff" font-size="20" font-weight="700">ULN2003</text>
+          <rect class="pin-block" x="1286" y="770" width="46" height="112" rx="4"/>
+          <circle class="pin-dot blue" cx="1310" cy="790" r="5"/><text class="small" x="1258" y="794">IN1</text>
+          <circle class="pin-dot blue" cx="1310" cy="816" r="5"/><text class="small" x="1258" y="820">IN2</text>
+          <circle class="pin-dot blue" cx="1310" cy="842" r="5"/><text class="small" x="1258" y="846">IN3</text>
+          <circle class="pin-dot blue" cx="1310" cy="868" r="5"/><text class="small" x="1258" y="872">IN4</text>
+          <rect class="pin-block" x="1518" y="786" width="38" height="64" rx="4"/>
+          <circle class="pin-dot orange" cx="1537" cy="806" r="5"/><text class="small" x="1564" y="810">+</text>
+          <circle class="pin-dot black" cx="1537" cy="832" r="5"/><text class="small" x="1564" y="836">-</text>
+          <circle cx="1618" cy="818" r="72" fill="#1f2329" stroke="#11151a" stroke-width="4"/>
+          <circle cx="1618" cy="818" r="28" fill="#a7b7c9"/>
+          <circle cx="1618" cy="818" r="10" fill="#30343a"/>
+          <text class="label" x="1564" y="920">28BYJ-48</text>
+        </g>
+
+        <!-- Power wiring -->
+        <path class="wire arduino" d="M398 1032V326H312"/>
+        <path class="wire gnd" d="M436 1032V358H312"/>
+        <path class="wire battery" d="M792 812H943"/>
+        <path class="wire gnd" d="M858 812V836H943"/>
+        <path class="wire external" d="M1189 810V342"/>
+        <path class="wire gnd" d="M1189 836V358"/>
+        <path class="wire external thin" d="M1537 806V342"/>
+        <path class="wire gnd thin" d="M1537 832V358"/>
+
+        <!-- Component power drops to rails -->
+        <path class="wire arduino thin" d="M378 225V326"/>
+        <path class="wire gnd thin" d="M462 225V358"/>
+        <path class="wire arduino thin" d="M610 225V326"/>
+        <path class="wire gnd thin" d="M688 225V358"/>
+        <path class="wire gnd thin" d="M824 234V358"/>
+        <path class="wire arduino thin" d="M856 234V326"/>
+        <path class="wire gnd thin" d="M952 234V358"/>
+        <path class="wire external thin" d="M1144 234V342"/>
+        <path class="wire gnd thin" d="M1176 234V358"/>
+        <path class="wire gnd thin" d="M1350 240V358"/>
+        <path class="wire arduino thin" d="M1390 240V326"/>
+
+        <!-- Signal wiring, routed around the breadboard to reduce crossings -->
+        <path class="wire signal" d="M420 225V250H156V706H376V762"/>
+        <rect class="label-bg" x="126" y="666" width="164" height="24"/>
+        <text class="label" x="136" y="683">DHT22 DATA → D2</text>
+
+        <path class="wire switch" d="M649 225V254H888V234"/>
+        <rect class="label-bg" x="684" y="248" width="154" height="24"/>
+        <text class="label" x="694" y="265">Pot orta → LCD V0</text>
+
+        <path class="wire lcd thin" d="M920 234V696H634V762"/>
+        <path class="wire lcd thin" d="M984 234V708H660V762"/>
+        <path class="wire lcd thin" d="M1016 234V680H424V762"/>
+        <path class="wire lcd thin" d="M1048 234V668H448V762"/>
+        <path class="wire lcd thin" d="M1080 234V656H472V762"/>
+        <path class="wire lcd thin" d="M1112 234V644H496V762"/>
+        <rect class="label-bg" x="732" y="634" width="346" height="24"/>
+        <text class="label" x="742" y="651">LCD: RS D12, E D13, D4-D7 → Arduino D4-D7</text>
+
+        <path class="wire analog" d="M1430 240V1004H512V1032"/>
+        <path class="wire analog thin" d="M1470 240V1020H550V1032"/>
+        <path class="wire switch" d="M1510 240V704H400V762"/>
+        <rect class="label-bg" x="1242" y="984" width="218" height="24"/>
+        <text class="label" x="1252" y="1001">Joystick: VRx A0, VRy A1</text>
+        <rect class="label-bg" x="1214" y="700" width="230" height="24"/>
+        <text class="label" x="1224" y="717">Joystick SW → D3, INPUT_PULLUP</text>
+
+        <path class="wire signal thin" d="M1310 790H528V762"/>
+        <path class="wire signal thin" d="M1310 816H552V762"/>
+        <path class="wire signal thin" d="M1310 842H576V762"/>
+        <path class="wire signal thin" d="M1310 868H604V762"/>
+        <rect class="label-bg" x="780" y="774" width="246" height="24"/>
+        <text class="label" x="790" y="791">ULN2003 IN1-IN4 → Arduino D8-D11</text>
+
+        <path class="wire signal thin" d="M1556 818H1586"/>
+        <text class="small" x="1518" y="886">Motor soketi kart üzerinde</text>
+      </svg>
+    </div>
+
+    <div class="tables">
+      <section>
+        <h2>Güç Hattı</h2>
+        <table>
+          <thead><tr><th>Birim / pin</th><th>Bağlantı</th><th>Birim</th></tr></thead>
+          <tbody>
+            <tr><td>9V pil +</td><td>LM2596 <code>IN+</code></td><td>9V DC</td></tr>
+            <tr><td>9V pil -</td><td>LM2596 <code>IN-</code></td><td>0V / GND</td></tr>
+            <tr><td>LM2596 <code>OUT+</code></td><td>Harici 5V rayı</td><td>5.0V DC</td></tr>
+            <tr><td>LM2596 <code>OUT-</code></td><td>Ortak GND rayı</td><td>0V</td></tr>
+            <tr><td>Arduino <code>5V</code></td><td>Hassas 5V rayı</td><td>5V DC</td></tr>
+            <tr><td>Tüm GND uçları</td><td>Ortak GND rayı</td><td>0V referans</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Motor ve Sürücü</h2>
+        <table>
+          <thead><tr><th>ULN2003</th><th>Arduino / hat</th><th>Birim</th></tr></thead>
+          <tbody>
+            <tr><td><code>IN1</code></td><td><code>D8</code></td><td>Dijital sinyal</td></tr>
+            <tr><td><code>IN2</code></td><td><code>D9</code></td><td>Dijital sinyal</td></tr>
+            <tr><td><code>IN3</code></td><td><code>D10</code></td><td>Dijital sinyal</td></tr>
+            <tr><td><code>IN4</code></td><td><code>D11</code></td><td>Dijital sinyal</td></tr>
+            <tr><td><code>+</code></td><td>Harici 5V rayı</td><td>5V DC</td></tr>
+            <tr><td><code>-</code></td><td>Ortak GND rayı</td><td>0V</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>Sensör ve Joystick</h2>
+        <table>
+          <thead><tr><th>Birim / pin</th><th>Bağlantı</th><th>Birim</th></tr></thead>
+          <tbody>
+            <tr><td>DHT22 <code>VCC</code></td><td>Arduino 5V rayı</td><td>5V DC</td></tr>
+            <tr><td>DHT22 <code>DATA</code></td><td><code>D2</code></td><td>Dijital veri</td></tr>
+            <tr><td>DHT22 <code>GND</code></td><td>Ortak GND rayı</td><td>0V</td></tr>
+            <tr><td>Joystick <code>+5V</code></td><td>Arduino 5V rayı</td><td>5V DC</td></tr>
+            <tr><td>Joystick <code>VRx</code></td><td><code>A0</code></td><td>Analog sinyal</td></tr>
+            <tr><td>Joystick <code>VRy</code></td><td><code>A1</code></td><td>Analog sinyal</td></tr>
+            <tr><td>Joystick <code>SW</code></td><td><code>D3</code></td><td><code>INPUT_PULLUP</code></td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section>
+        <h2>LCD ve Kontrast</h2>
+        <table>
+          <thead><tr><th>LCD pin</th><th>Bağlantı</th><th>Birim</th></tr></thead>
+          <tbody>
+            <tr><td><code>VSS</code>, <code>RW</code>, <code>K</code></td><td>Ortak GND rayı</td><td>0V</td></tr>
+            <tr><td><code>VDD</code></td><td>Arduino 5V rayı</td><td>5V DC</td></tr>
+            <tr><td><code>V0</code></td><td>Potansiyometre orta bacak</td><td>Kontrast</td></tr>
+            <tr><td><code>RS</code>, <code>E</code></td><td><code>D12</code>, <code>D13</code></td><td>Dijital sinyal</td></tr>
+            <tr><td><code>D4-D7</code></td><td><code>D4-D7</code></td><td>4-bit veri</td></tr>
+            <tr><td><code>A</code></td><td>Harici 5V rayı</td><td>Arka ışık +</td></tr>
+            <tr><td>Pot uçları</td><td>Arduino 5V / GND</td><td>10 kΩ</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+
+    <p class="footnote">
+      Kaynak yaklaşımı: Fritzing/Tinkercad benzeri breadboard görünümü referans alınarak özgün sembolik SVG çizildi; kullanıcı fotoğrafları ve ürün görselleri kullanılmadı.
+      Arduino fiziksel kartın Nano ise aynı isimli pinleri Nano üzerindeki karşılıklarına bağla.
+    </p>
+  </main>
+</body>
+</html>
