@@ -9,13 +9,13 @@
 ## SOL SÜTUN
 
 ### Problem / Soru Cümlesi
-Küçük bir bütçeyle, kovan içindeki sıcaklığa göre uçuş deliğini otomatik açıp kapatan, arılara zarar vermeden havalandırmayı yöneten bir akıllı kovan sürgüsü tasarlanabilir mi?
+Az bir bütçeyle, kovan içindeki sıcaklığa göre kovanın kapısını kendi kendine açıp kapatan, arılara zarar vermeyen küçük bir akıllı kovan tasarlanabilir mi?
 
 ### Özet
-Bu projede arıların kış soğuğundan ve yaz sıcağından korunmasına yardımcı olacak sıcaklığa duyarlı bir mini akıllı kovan maketi tasarlanmıştır. Proje ile sensör verisini kullanarak fiziksel kontrol yapan bir gömülü sistem tasarlamayı, step motor ve elektronik bileşenlerin birlikte çalışma prensiplerini kavramayı, arı sağlığı ve sürdürülebilir tarım bilinci geliştirmeyi amaçlamaktayız.
+Bu projede arıların kışın soğuktan, yazın sıcaktan korunmasına yardım edecek küçük bir akıllı kovan maketi tasarlandı. Kovanın kapısı, DHT22 adı verilen sıcaklık-nem sensörünün ölçtüğü değerlere göre 28BYJ-48 step motoru ile kendi kendine açılıp kapanmaktadır. Tüm parçalar Arduino Nano kontrol kartına bağlanmıştır. Böylece teknolojinin doğa ve hayvanlar için nasıl kullanılabileceği öğrenilmiştir.
 
 ### Yöntem
-Proje kapsamında geri dönüştürülmüş ahşap ve karton parçalarla kovan maketi hazırlanmış, kovan içine sıcaklık-nem ölçümü için DHT22 sensörü yerleştirilmiştir. Uçuş deliği önüne 28BYJ-48 step motor ile hareket eden 0–150 mm aralığında bir sürgü monte edilmiş; bu sürgü, Arduino Nano üzerinde yazılan lineer algoritma ile 5–30 °C aralığında orantılı olarak konumlanmaktadır. Mevcut sıcaklık-nem ve sürgü konumu LCD 1602A ekrana yansıtılmaktadır. Sistem üç çalışma moduyla tasarlanmıştır: SENSOR modunda DHT22'den okunan gerçek sıcaklığa göre sürgü otomatik konumlanır; AYAR modunda HW-504 joystik üzerinden farklı sıcaklık-nem değerleri simüle edilerek sıcak su veya buz aküsüne gerek kalmadan oda sıcaklığında tüm sıcaklık senaryoları test edilebilir; KONTROL modunda ise sürgü manuel olarak hareket ettirilerek kalibrasyon ve bakım yapılır. Modlar arası geçiş joystik butonu ya da web arayüzü ile sağlanmaktadır. Step motor bobinlerinin oluşturduğu gerilim sıçramalarının DHT22 sensörünü etkilememesi için iki ayrı 5 V güç hattı kurulmuş; hassas elemanlar Arduino 5 V'una, motor ve LCD arka ışığı LM2596 regülatörüyle ayrı bir hatta bağlanmıştır. AYAR modu simülasyonu sayesinde sistemin tüm sıcaklık aralığındaki davranışı tek seferde doğrulanmıştır.
+Proje kapsamında karton ve geri dönüşüm ahşap parçalarıyla mini bir kovan maketi hazırlanmıştır. Kovanın içine DHT22 adı verilen sıcaklık-nem sensörü yerleştirilmiştir. Kovanın giriş kapısının önüne ise 28BYJ-48 step motoru takılmıştır; bu motor, ULN2003 sürücü kartı yardımıyla kapıyı hareket ettirmektedir. Tüm parçalar Arduino Nano kontrol kartına bağlanmıştır. Kart, sensörden okuduğu sıcaklığa göre kararlar verir: sıcaklık 5 °C altına düşerse kapı tamamen kapanır, 30 °C üstüne çıkarsa tamamen açılır, arada ise yarı yarıya açık tutulur. Sıcaklık, nem ve kapı konumu LCD 1602A ekranda gösterilmektedir. Sistemin üç çalışma modu vardır: otomatik modda sensöre göre çalışır, ayar modunda HW-504 joystick ile sanal sıcaklık değerleri verilip kapının tepkisi test edilir, kontrol modunda ise kapı elle hareket ettirilir. Sistem ayrıca telefondan ya da bilgisayardan web arayüzü üzerinden de kontrol edilebilmektedir. Motorun sensörü etkilememesi için motor ve sensör ayrı güç kaynaklarından beslenmiştir.
 
 ---
 
@@ -28,17 +28,17 @@ Ad-Soyad
 Ad-Soyad
 
 **BULGULAR**
-*(Maket fotoğrafları, devre görselleri ve sıcaklık-sürgü konumu testlerine ait gözlem fotoğrafları buraya eklenecektir.)*
+*(Maket fotoğrafları, devre görselleri ve sıcaklık testlerine ait gözlem fotoğrafları buraya eklenecektir.)*
 
 ---
 
 ## SAĞ SÜTUN
 
 ### Sonuç ve Tartışma
-Proje sonunda küçük bütçeli, basit sensörlerle çalışan bir mini akıllı kovan sürgü sisteminin başarıyla üretilebildiği gösterilmiştir. Sıcaklığa duyarlı lineer algoritma sayesinde sürgü ani değil kademeli olarak konumlanmış; 5 °C ve altında tam kapalı kalarak donma güvenliği sağlanmış, 30 °C ve üzerinde tam açık konuma geçerek havalandırma yapılmış, ara değerlerde ise orantılı açıklık korunmuştur. Geliştirilen üç mod sayesinde sistem hem otomatik hem manuel kullanılabilir hale gelmiş; özellikle AYAR modunun simülasyon özelliği sayesinde gerçek bir kış-yaz sıcaklığı oluşturmaya gerek kalmadan tüm aralık doğrulanmıştır. Step motor gerilim sıçramalarının DHT22 sensörünü etkilemesi sorunu yaşandığında çift güç hattı çözümü uygulanarak gerçek mühendislikte de kullanılan güç ayrımı yöntemi öğrenilmiştir. Proje gerçek arılar üzerinde denenmemiş, canlıya zarar verme riski tamamen ortadan kaldırılmıştır. Gelecekte güneş paneli ile bataryasız çalışma ve gerçek kovana takılabilir dayanıklı bir versiyon hedeflenmektedir.
+Projemizde DHT22 sıcaklık-nem sensörü ve 28BYJ-48 step motoru sayesinde kovan kapısı sıcaklığa göre kendiliğinden açılıp kapanmıştır. Hava soğuduğunda arıları korumak için kapı kapanmış, hava ısındığında havalandırma için açılmıştır. HW-504 joystick sayesinde gerçek arıları riske atmadan tüm sıcaklık koşulları test edilmiştir. Arduino Nano üzerinde yazılan kod ile elektronik parçaların nasıl birbirine bağlanıp kontrol edilebileceği öğrenilmiştir. İleride güneş paneli ekleyerek pilsiz çalışmayı ve gerçek bir arı kovanına uyarlanmasını planlamaktayız.
 
 ### Kaynaklar
-DHT22 (AM2302) datasheet — Aosong Electronics. 28BYJ-48 / ULN2003 step motor teknik belgeleri. Arduino resmî dokümantasyonu — `docs.arduino.cc`. Türkiye Arıcılık Federasyonu — Kovan içi ideal sıcaklık rehberi.
+DHT22 sıcaklık-nem sensörü teknik dokümanı. 28BYJ-48 step motor ve ULN2003 sürücü kartı teknik dokümanı. Arduino resmî sayfası — `docs.arduino.cc`. Türkiye Arıcılık Federasyonu — Kovan içi ideal sıcaklık rehberi.
 
 ### Ölçüler
-Kovan maketi yaklaşık 20 cm × 15 cm × 12 cm boyutundadır. Sürgü hareket aralığı 0–150 mm'dir (0 mm = açık, 150 mm = kapalı). Step motor kalibrasyonu 9318 yarım-adım = 150 mm olarak yapılmıştır.
+Kovan maketi yaklaşık 20 cm × 15 cm × 12 cm boyutundadır. Kapı 0–15 cm arasında hareket etmektedir.
